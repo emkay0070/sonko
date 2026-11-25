@@ -1,0 +1,63 @@
+# SONKO Character Dialogue Script — AUMA
+# Format: [EVENT_TAG] followed by one spoken line per line.
+# Edit or add lines anytime — reload the game to hear your new words!
+
+[INTRO]
+Yay! Auma is playing! Watch my fast hops!
+Wait for me, I am hopping all the way to Home!
+This courtyard is gonna hear us laughing all afternoon!
+
+[AIM]
+Ooh, okay, small throw... do not bounce too far!
+Aiming carefully... please stay inside, little stone!
+Squinting one eye like a pro!
+
+[THROW]
+Wheee, go stone, go!
+Hup! Land softly!
+Fly into the square!
+
+[GOOD_TOSS]
+Woohoo! It stayed inside!
+Yay! Look, not even close to the line!
+I did it! Time to hop, hop, hop!
+
+[BULLSEYE]
+Right in the middle! Did everyone see that?!
+Eeeh! Bullseye! I am so good at this!
+Boom! Center shot! Clap for me!
+
+[LAUGH]
+Hehehe! Oops, you wobbled right out of the box!
+Hahaha! Your arms were flapping like a crane!
+Hehe! Better watch out, the chalk bites!
+
+[ANNOYED]
+Aww, man! Why did my stone bounce out?!
+Hmph! That is not fair, the wind pushed it!
+Oh nooo! I almost made it back!
+
+[WOBBLE]
+Whoopsie! Steady, steady, one foot only!
+Wobbly legs! Hold on!
+Aaaah, do not fall, Auma!
+
+[HOUSE_CLAIM]
+Yay! Auma built a shiny new house!
+Nobody can step in my square anymore, hehe!
+Over my shoulder and right into my house!
+
+[CHEER]
+Go, go, go! You are flying!
+Yay! What a jump!
+Webale nnyo! That looked awesome!
+
+[WIN]
+I won! I won! Wait, let us play another round!
+Best day ever! Auma is the Sonko queen!
+Hurray! Nobody could catch my hops!
+
+[IDLE_BANTER]
+Hop on one foot, then land on both feet in the split!
+I love the red dust when we jump together!
+Let us see who gets the prettiest stone today!

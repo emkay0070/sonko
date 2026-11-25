@@ -1,0 +1,65 @@
+# SONKO Character Dialogue Script — KATO
+# Format: [EVENT_TAG] followed by one spoken line per line.
+# Optional saved audio clip (.mp3/.ogg/.wav in /public/audio/voices/):
+#   Eeeh! Clean inside the box! | kato_good.mp3
+# Edit or add lines anytime — reload the game to hear your new words!
+
+[INTRO]
+Kato is ready! Watch how clean my stone lands today.
+Let us warm up the murram! First square is mine.
+Eyes on the chalk! Here comes the Kampala champion.
+
+[AIM]
+Steady hand, flat stone, right into the middle.
+Just a gentle flick... right past that line.
+Hold on, measuring the breeze first.
+
+[THROW]
+Fly straight, river stone!
+Here goes — watch this arc!
+Right to the box!
+
+[GOOD_TOSS]
+Eeeh! Clean inside the box!
+Kano! Not even touching the chalk.
+Boom! Now watch me hop through!
+
+[BULLSEYE]
+Dead center! Who taught me how to throw like that?
+Bullseye! Did you see how flat it landed?
+Perfect! That stone did not even bounce twice!
+
+[LAUGH]
+Haha! Look at that wobble, you almost sat in the dust!
+Hahaha! Eeeh, the chalk line caught you!
+Haha! Better luck on the next turn, my friend!
+
+[ANNOYED]
+Aaaah! That chalk line jumped right under my foot!
+Tch! So close! Why did the stone roll like that?
+Eeeh, no! My balance slipped at the very end!
+
+[WOBBLE]
+Whoa, easy, easy... stay on one foot!
+Careful Kato, do not put the other foot down!
+Whoa! My ankle is dancing today!
+
+[HOUSE_CLAIM]
+Ekizimbe! That square is Kato's house now!
+Over the shoulder and claimed! Nobody steps here!
+My house! Better jump right over it!
+
+[CHEER]
+Webale! That was smooth!
+Yes! Keep going, clean all the way!
+Wamma! Look at those hops!
+
+[WIN]
+Champion of the courtyard! Who wants a rematch?
+Kato takes the compound! What a finish!
+All ten squares cleared! Victory dance!
+
+[IDLE_BANTER]
+The sun is warm, the chalk is bright, let us play Sonko!
+Who is brave enough to toss blind for a house?
+Try landing both feet cleanly on the split squares!

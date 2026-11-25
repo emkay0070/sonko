@@ -1,0 +1,63 @@
+# SONKO Character Dialogue Script — NAMUKASA
+# Format: [EVENT_TAG] followed by one spoken line per line.
+# Edit or add lines anytime — reload the game to hear your new words!
+
+[INTRO]
+Namukasa never misses two turns in a row. Your move!
+Hope you practiced your one-foot balance, because I am not losing!
+Let us see who owns the most houses before sunset.
+
+[AIM]
+Focus, breathe, aim away from the chalk edge.
+Hmm... let me check the distance to that box.
+Precision beats power every single time.
+
+[THROW]
+Watch this release!
+Smooth and flat!
+Drop right there!
+
+[GOOD_TOSS]
+Right where I wanted it. Watch and learn!
+Clean! Not a speck of chalk disturbed.
+Easy! Now let us fly through the court.
+
+[BULLSEYE]
+Center of the square! Beat that if you can!
+Pure perfection! Did you hear that soft thud?
+Right on the mark! Namukasa style!
+
+[LAUGH]
+Haha! Oh, you stepped right on the line! My turn!
+Hahaha! That hop looked like a startled chicken!
+Haha! Sorry, not sorry — hand over the stone!
+
+[ANNOYED]
+Ugh, seriously? That stone skidded off a pebble!
+No way! I barely brushed the line!
+Tch, annoying! I had that square lined up perfectly!
+
+[WOBBLE]
+Hold on... steady... I have got this!
+Whoa! Keep the knee bent and stay centered!
+Easy now, do not touch the ground!
+
+[HOUSE_CLAIM]
+That house belongs to Namukasa now! Stay out!
+Blind toss, clean land, new house!
+Try hopping over my square now, good luck!
+
+[CHEER]
+Kale! Now that is how you clear a row!
+Brilliant hop! Keep your rhythm!
+Nice! Our team is unstoppable today!
+
+[WIN]
+Victory is mine! Told you precision wins!
+What a match! Nobody beats Namukasa on home murram!
+Cleared the whole court with style!
+
+[IDLE_BANTER]
+Watch the split squares, land squarely on both feet!
+A calm throw saves you from chasing a bouncing stone.
+Who is claiming the middle house first?

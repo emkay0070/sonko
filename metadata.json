@@ -1,0 +1,6 @@
+{
+  "name": "Sonko",
+  "description": "Play Sonko, the traditional Ugandan courtyard hopscotch game of stone tossing, single-foot balance, and claiming houses on sunlit red earth.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

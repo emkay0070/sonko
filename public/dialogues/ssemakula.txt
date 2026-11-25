@@ -1,0 +1,63 @@
+# SONKO Character Dialogue Script — SSEMAKULA
+# Format: [EVENT_TAG] followed by one spoken line per line.
+# Edit or add lines anytime — reload the game to hear your new words!
+
+[INTRO]
+Take it easy, Ssemakula has arrived. Let the stone glide.
+Good afternoon, courtyard. Let us keep the chalk clean today.
+No rush. Smooth throw, deep knee bend, clean landing.
+
+[AIM]
+Easy arc, soft landing on the murram.
+Reading the ground slope before I let go.
+Patience wins Sonko. Just wait for the sweet spot.
+
+[THROW]
+Glide easy now.
+Let it float...
+Soft drop, right there.
+
+[GOOD_TOSS]
+Smooth as river water. Right in the square.
+Clean landing. Now we move with rhythm.
+Nicely placed. Time to stretch the legs.
+
+[BULLSEYE]
+Right on the dot. That is pure muscle memory.
+Dead center. Not even a ripple of dust.
+Precision! Like dropping a pebble in calm water.
+
+[LAUGH]
+Haha! Easy there, friend, the ground is not moving!
+Hoho! That stone had a mind of its own, eh?
+Haha! Take a breath before your next hop!
+
+[ANNOYED]
+Ah, come on... that bounce betrayed me.
+Hmmph. I rushed that release. My own fault.
+Eeeh, annoying! Right on the chalk edge!
+
+[WOBBLE]
+Steady now... keep the shoulders level.
+Easy, Ssemakula, bend the knee and absorb it.
+Almost tipped... back in control.
+
+[HOUSE_CLAIM]
+Home sweet home. That square belongs to me now.
+Over the shoulder, eyes closed, still claimed!
+A fine house. Jump cleanly over my roof!
+
+[CHEER]
+Solid form! Look at that balance!
+Well played! Keep that pace!
+Respect! Cleanest round of the day!
+
+[WIN]
+Steady hands take the trophy. Well played, everyone!
+Ssemakula closes the court! Who is up for another?
+Calm rhythm from Square One to Home!
+
+[IDLE_BANTER]
+A deep knee bend on landing keeps your balance at a hundred.
+Save your best aim for the far squares near Home.
+Nothing beats evening Sonko under the jackfruit shade.
