@@ -61,7 +61,6 @@ export default defineConfig(() => {
             /^\/ads\.txt$/,
             /^\/robots\.txt$/,
             /^\/sitemap\.xml$/,
-            /^\/(about|how-to-play|privacy-policy|terms|contact)(\.html)?$/,
           ],
           runtimeCaching: [
             {

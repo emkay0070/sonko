@@ -526,7 +526,7 @@ export class SonkoCourt3D {
   }
 
   public setWorldPlace(place: WorldPlaceId) {
-    if (place === 'kampala_compound') {
+    if (place === 'kampala_compound' || place === 'entebbe_lakeside' || place === 'primary_schoolyard') {
       this.courtPadMesh.visible = false;
       this.courtPadRimMesh.visible = false;
       return;
@@ -534,12 +534,8 @@ export class SonkoCourt3D {
 
     this.courtPadMesh.visible = true;
     this.courtPadRimMesh.visible = true;
-    if (place === 'primary_schoolyard') {
-      this.courtPadBaseColorHex = '#a88766';
-    } else if (place === 'trading_centre') {
+    if (place === 'trading_centre') {
       this.courtPadBaseColorHex = '#8f6850';
-    } else if (place === 'entebbe_lakeside') {
-      this.courtPadBaseColorHex = '#b9945d';
     } else if (place === 'ndere_festival') {
       this.courtPadBaseColorHex = '#643c2c';
     }

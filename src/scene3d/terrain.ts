@@ -375,9 +375,9 @@ export function applyWorldTerrainTheme(
     pebbles.visible = place === 'kampala_compound';
   }
 
-  // Keep inner terrain clean on Entebbe beach (worldEnvs renders beach + water) or visible with appropriate surface
+  // Keep inner terrain clean on Entebbe beach and Primary Schoolyard (each builds dedicated seamless terrain)
   if (innerMesh) {
-    innerMesh.visible = place !== 'entebbe_lakeside';
+    innerMesh.visible = place !== 'entebbe_lakeside' && place !== 'primary_schoolyard';
   }
 
   if (terrainGroup.userData.__hasCustomSurface) {

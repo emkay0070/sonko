@@ -45,7 +45,7 @@ export function OnlineLobbyModal({
     const text =
       kind === 'code'
         ? activeRoom.code
-        : `${window.location.origin}${window.location.pathname}?room=${activeRoom.code}`;
+        : `${window.location.origin}/play?room=${activeRoom.code}`;
     try {
       await navigator.clipboard.writeText(text);
       setCopiedType(kind);

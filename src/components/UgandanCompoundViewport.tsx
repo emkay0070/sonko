@@ -363,9 +363,6 @@ export const UgandanCompoundViewport = forwardRef<UgandanCompoundHandle, Ugandan
           period: daylightProp ?? daylight,
           weatherMode: weatherModeProp ?? weatherMode,
         });
-        if (previewPlaceRef.current === 'primary_schoolyard') {
-          controllerRef.current?.triggerArrivalSequence();
-        }
       },
       startOnlineGame: (room, localSlot) => {
         controllerRef.current?.engine.startOnlineGame(room, localSlot);

@@ -123,9 +123,10 @@ export function renderSitemapXml(origin: string): string {
   const nowDate = new Date().toISOString().slice(0, 10);
   const paths = [
     { loc: '/', priority: '1.0', changefreq: 'weekly' },
+    { loc: '/play', priority: '0.9', changefreq: 'weekly' },
     { loc: '/how-to-play', priority: '0.9', changefreq: 'monthly' },
     { loc: '/about', priority: '0.8', changefreq: 'monthly' },
-    { loc: '/privacy-policy', priority: '0.6', changefreq: 'yearly' },
+    { loc: '/privacy', priority: '0.6', changefreq: 'yearly' },
     { loc: '/terms', priority: '0.6', changefreq: 'yearly' },
     { loc: '/contact', priority: '0.6', changefreq: 'yearly' },
   ];

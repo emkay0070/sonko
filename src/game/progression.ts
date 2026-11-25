@@ -129,11 +129,11 @@ export const WORLD_PLACES: WorldPlaceSpec[] = [
     id: 'primary_schoolyard',
     name: 'Primary Schoolyard',
     shortName: 'Schoolyard',
-    region: 'Park & Playground',
+    region: 'UPE School Courtyard',
     venueId: 'kampala_murram',
     defaultPeriod: 'morning',
     tag: 'Crisp Murram',
-    description: 'Sunlit park & primary schoolyard with shaded lawns and playground swings.',
+    description: 'Red-murram Ugandan primary school courtyard framed by brick classrooms, verandas, and mango shade.',
   },
   {
     id: 'entebbe_lakeside',

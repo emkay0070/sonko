@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/((?!api/|assets/|models/|dialogues/|audio/|sw\\.js|workbox-.*|manifest\\.webmanifest|ads\\.txt|robots\\.txt|sitemap\\.xml|icon\\.svg|apple-touch-icon\\.png|pwa-.*\\.png).*)",
+      "destination": "/index.html"
+    }
+  ]
+}

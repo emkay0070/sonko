@@ -1,6 +1,7 @@
 import React from 'react';
 import { ShieldCheck } from 'lucide-react';
 import type { AdPersonalizationConsent } from '../game/settings';
+import { Link } from '../router';
 
 interface ConsentBannerProps {
   onSelectConsent: (consent: Exclude<AdPersonalizationConsent, 'unset'>) => void;
@@ -21,12 +22,12 @@ export function ConsentBanner({ onSelectConsent }: ConsentBannerProps) {
           <p className="text-xs text-[#E5D3BE]/85 leading-relaxed mt-1">
             Sonko saves your progress locally and uses Google AdSense / H5 Games Ads to keep the courtyard free.
             Choose personalized ads or essential non-personalized ads. See our{' '}
-            <a
-              href="/privacy-policy"
+            <Link
+              to="/privacy"
               className="text-amber-300 underline hover:text-amber-200 font-medium"
             >
               Privacy Policy
-            </a>
+            </Link>
             .
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">

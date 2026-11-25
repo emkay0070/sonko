@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { Camera, CloudRain, ExternalLink, Gamepad2, Monitor, RotateCcw, ShieldCheck, Volume2, X } from 'lucide-react';
+import { Link } from '../router';
 import {
   DEFAULT_SETTINGS,
   DefaultMatchCamera,
@@ -412,18 +413,19 @@ export function SettingsModal({
               {[
                 { href: '/how-to-play', label: 'How to Play' },
                 { href: '/about', label: 'About Sonko' },
-                { href: '/privacy-policy', label: 'Privacy Policy' },
+                { href: '/privacy', label: 'Privacy Policy' },
                 { href: '/terms', label: 'Terms of Use' },
                 { href: '/contact', label: 'Contact Us' },
               ].map((link) => (
-                <a
+                <Link
                   key={link.href}
-                  href={link.href}
+                  to={link.href}
+                  onClick={onClose}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#120805] hover:bg-[#26140D] border border-[#FAF3E8]/15 text-amber-200 hover:text-amber-100 font-medium transition-colors"
                 >
                   <span>{link.label}</span>
                   <ExternalLink className="w-3 h-3 opacity-75" aria-hidden="true" />
-                </a>
+                </Link>
               ))}
             </div>
           </section>

@@ -124,7 +124,7 @@ const CAMERA_PRESETS: Record<CompoundCameraPreset, CameraWaypoint> = {
   },
 };
 
-type AtmosphereKey = 'morning' | 'midday' | 'golden' | 'overcast' | 'night';
+type AtmosphereKey = 'morning' | 'midday' | 'golden' | 'overcast' | 'night' | 'lakeside';
 
 interface AtmosphereConfig {
   elevationDeg: number;
@@ -230,12 +230,29 @@ const ATMOSPHERE_CONFIGS: Record<AtmosphereKey, AtmosphereConfig> = {
     rayleigh: 0.35,
     envIntensity: 0.2,
   },
+  lakeside: {
+    elevationDeg: 40,
+    azimuthDeg: 145,
+    sunColor: '#fff4dc',
+    sunIntensity: 3.05,
+    skyColor: '#48a4eb',
+    groundBounce: '#c8a268',
+    hemiIntensity: 1.05,
+    fillIntensity: 0.44,
+    fillColor: '#add8f7',
+    fogColor: '#bfe4f8',
+    fogDensity: 0.002,
+    exposure: 0.94,
+    turbidity: 1.15,
+    rayleigh: 0.85,
+    envIntensity: 0.52,
+  },
 };
 
 function venueToAtmosphere(venue: CourtVenueId): AtmosphereKey {
   switch (venue) {
     case 'entebbe_sand':
-      return 'morning';
+      return 'lakeside';
     case 'jinja_rain':
       return 'overcast';
     case 'ndere_night':
@@ -371,7 +388,7 @@ export function mountUgandanCompoundScene(
 
   const scene = new THREE.Scene();
 
-  const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 280);
+  const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 520);
   camera.position.set(...CAMERA_PRESETS.characters.pos);
 
   const controls = new OrbitControls(camera, renderer.domElement);
@@ -471,6 +488,7 @@ export function mountUgandanCompoundScene(
   worldGroup.add(distantWorld.group);
 
   const worldEnvs = buildWorldEnvironments({
+    textures,
     isSoftwareGl,
     shadowsEnabled: () => shadowsEnabledSetting,
     maxAnisotropy: maxAniso,
@@ -684,8 +702,17 @@ export function mountUgandanCompoundScene(
   };
 
   const syncVenueAtmosphere = () => {
+    const venue = engine.getActiveVenue();
+    const isEntebbe = venue === 'entebbe_sand' || currentWorldPlace === 'entebbe_lakeside';
+    const isSchoolyard = currentWorldPlace === 'primary_schoolyard';
     const key =
-      daylightOverride === 'auto' ? venueToAtmosphere(engine.getActiveVenue()) : daylightOverride;
+      daylightOverride === 'auto'
+        ? isEntebbe
+          ? 'lakeside'
+          : isSchoolyard
+            ? 'morning'
+            : venueToAtmosphere(venue)
+        : daylightOverride;
     applyAtmosphere(key);
   };
 
@@ -1139,7 +1166,7 @@ export function mountUgandanCompoundScene(
     updateGlobalTreeWind(accumulatedWindTime, visualWindStrength, smoothedWindDirX, smoothedWindDirZ);
     vegetation.updateWind(accumulatedWindTime);
     syncVenueAtmosphere();
-    worldEnvs.update(dt, elapsed);
+    worldEnvs.update(dt, elapsed, smoothedWetness);
     notifyArrivalIfChanged();
 
     const mistActive = dynamicWeatherEnabledSetting && smoothedMistIntensity > 0.06;

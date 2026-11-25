@@ -1,7 +1,13 @@
 import * as THREE from 'three';
 import { WorldPlaceId } from '../game/progression';
 import { extractOakLod0Prototypes } from './distantWorld';
+import { buildEntebbeLakesideEnvironment, EntebbeLakesideRig } from './entebbeLakesideScene';
 import { disposeLoadedModel, isSharedResource, load3DModelFromUrl } from './modelLoader';
+import { CompoundTextureLibrary } from './pbrTextures';
+import {
+  buildPrimarySchoolyardEnvironment,
+  PrimarySchoolyardRig,
+} from './primarySchoolyardScene';
 import { groundHeightAt } from './terrain';
 import { applyNaturalWindShader } from './treeWind';
 
@@ -20,7 +26,7 @@ export interface WorldEnvironmentsRig {
   skipArrivalSequence: () => void;
   isArrivalPlaying: () => boolean;
   getArrivalCameraTarget: () => ArrivalCameraTarget | null;
-  update: (dt: number, elapsed: number) => void;
+  update: (dt: number, elapsed: number, wetness?: number) => void;
   setShadowsEnabled: (enabled: boolean) => void;
   dispose: () => void;
 }
@@ -63,6 +69,7 @@ function normalizeAssetToTarget(
 }
 
 export function buildWorldEnvironments(options: {
+  textures: CompoundTextureLibrary;
   isSoftwareGl: boolean;
   shadowsEnabled: () => boolean;
   maxAnisotropy: number;
@@ -92,6 +99,8 @@ export function buildWorldEnvironments(options: {
   }> = [];
 
   const instancedMeshesToDispose: THREE.InstancedMesh[] = [];
+  let entebbeRig: EntebbeLakesideRig | null = null;
+  let schoolyardRig: PrimarySchoolyardRig | null = null;
   const aniso = Math.min(4, Math.max(1, options.maxAnisotropy));
 
   // Shared Oak Tree LOD2/LOD1 prototypes (loaded lazily once at module level & reused cleanly across worlds)
@@ -140,15 +149,8 @@ export function buildWorldEnvironments(options: {
     }
   };
 
-  // Car Arrival Sequence state (used in Primary Schoolyard / Park & Playground)
-  let arrivalCarHolder: THREE.Group | null = null;
+  // Legacy arrival state kept inert for backward API compatibility
   let arrivalActive = false;
-  let arrivalElapsed = 0;
-  const ARRIVAL_TOTAL_DURATION = 5.4;
-  const _arrivalCamPos = new THREE.Vector3();
-  const _arrivalLookAt = new THREE.Vector3();
-
-  const PARKED_CAR_POS = { x: -5.85, z: -8.35, rotY: 0.24 };
 
   const getOrCreatePlaceGroup = (place: WorldPlaceId): THREE.Group => {
     let pg = placeGroups.get(place);
@@ -568,289 +570,55 @@ export function buildWorldEnvironments(options: {
   };
 
   // =========================================================================
-  // 3. PRIMARY SCHOOLYARD & PARK + TRAILER PARK LANE + CAR ARRIVAL + PLAYGROUND
+  // 3. PRIMARY SCHOOLYARD (Authentic Ugandan UPE Brick Classrooms & Murram Yard)
   // =========================================================================
   const buildPrimarySchoolyard = (pg: THREE.Group) => {
-    // Paved approach lane linking Trailer Park neighborhood to the Playground & Park court
-    const laneGeo = new THREE.PlaneGeometry(34, 4.2);
-    laneGeo.rotateX(-Math.PI / 2);
-    const laneMat = new THREE.MeshStandardMaterial({
-      color: '#524e4b',
-      roughness: 0.9,
-      metalness: 0.02,
+    schoolyardRig = buildPrimarySchoolyardEnvironment({
+      textures: options.textures,
+      isSoftwareGl: options.isSoftwareGl,
+      shadowsEnabled: options.shadowsEnabled,
+      maxAnisotropy: aniso,
     });
-    trackedGeos.add(laneGeo);
-    trackedMats.add(laneMat);
-    const lane = new THREE.Mesh(laneGeo, laneMat);
-    lane.position.set(-7.5, 0.012, -8.5);
-    lane.receiveShadow = true;
-    pg.add(lane);
+    pg.add(schoolyardRig.group);
 
-    void Promise.all([
-      // A. Complete Park Environment kept at TRUE human scale (0.78x) so lamp posts & trees are 3.5–4m tall!
-      (async () => {
-        try {
-          const loaded = await load3DModelFromUrl(
-            '/assets/worlds/primary_schoolyard/Park.usdz',
-            'Park.usdz',
-            aniso
-          );
-          if (disposed) {
-            disposeLoadedModel(loaded.scene);
-            return;
-          }
-          const parkRoot = loaded.scene;
-          parkRoot.scale.setScalar(0.78);
-          parkRoot.updateMatrixWorld(true);
-
-          // Hide giant 224m Plane_001 outer slab that causes Z-fighting, keep walkways/lamps/trees
-          parkRoot.traverse((obj) => {
-            if ((obj as THREE.Mesh).isMesh) {
-              const b = new THREE.Box3().setFromObject(obj);
-              const s = b.getSize(new THREE.Vector3());
-              if (Math.max(s.x, s.z) > 85 && s.y < 0.25) {
-                obj.visible = false;
-              }
-            }
-          });
-
-          configureLoadedMeshes(parkRoot);
-
-          const parkHolder = new THREE.Group();
-          parkHolder.name = 'CompleteParkScene';
-          parkHolder.add(parkRoot);
-          // Align the near park lamp/walkway cluster nicely around the court & playground
-          parkHolder.position.set(16.5, -0.02, -4.5);
-          pg.add(parkHolder);
-          parkHolder.updateMatrixWorld(true);
-
-          // Move any trees/lamps inside central hopscotch court clearing outward cleanly,
-          // and disable shadow casting on distant outer Park props (> 12m from court)
-          const tempBox = new THREE.Box3();
-          const tempCenter = new THREE.Vector3();
-          const tempSize = new THREE.Vector3();
-          const moved = new Set<THREE.Object3D>();
-          parkRoot.traverse((obj) => {
-            if (!(obj as THREE.Mesh).isMesh || !obj.visible) return;
-            const targetObj =
-              obj.parent && obj.parent !== parkRoot && obj.parent.children.length <= 4
-                ? obj.parent
-                : obj;
-            tempBox.setFromObject(obj);
-            tempBox.getCenter(tempCenter);
-            tempBox.getSize(tempSize);
-            if (Math.hypot(tempCenter.x, tempCenter.z) > 12 || tempSize.y < 0.25) {
-              obj.userData.__noCastShadow = true;
-              obj.castShadow = false;
-            }
-            if (moved.has(targetObj)) return;
-            if (tempSize.y < 0.35 || Math.max(tempSize.x, tempSize.z) > 15) return;
-            if (Math.abs(tempCenter.x - 0.25) < 2.9 && Math.abs(tempCenter.z - 0.35) < 4.9) {
-              moved.add(targetObj);
-              const dirX = tempCenter.x >= 0.25 ? 1 : -1;
-              targetObj.position.x += (dirX * 6.4 - (tempCenter.x - 0.25)) / 0.78;
-            }
-          });
-        } catch (err) {
-          console.warn('Could not load complete Park environment:', err);
-        }
-      })(),
-
-      // B. Trailer Park Neighborhood along the Western Approach Avenue (true 34x human scale!)
-      (async () => {
-        try {
-          const loaded = await load3DModelFromUrl(
-            '/assets/props/Trailer_Park.usdz',
-            'Trailer_Park.usdz',
-            aniso
-          );
-          if (disposed) {
-            disposeLoadedModel(loaded.scene);
-            return;
-          }
-          const tpRoot = loaded.scene;
-          // Hide sky backdrop cards & occluded interior furniture inside trailers for crisp FPS
-          tpRoot.traverse((obj) => {
-            if (
-              obj.name &&
-              /^(Background|Bed|Stove|Couch|Casserole|Skillet|knife|Cereal|washbasin|Cookware|Toilet|trash_can|Champoo|soap|Books|Clock|Picture_frames|Fridge|Table|Chair|Pillow|Blanket|Sink|Shower|Bathtub)/i.test(
-                obj.name
-              )
-            ) {
-              obj.visible = false;
-            }
-          });
-
-          tpRoot.scale.setScalar(34);
-          tpRoot.updateMatrixWorld(true);
-          const box = new THREE.Box3().setFromObject(tpRoot);
-          const center = box.getCenter(new THREE.Vector3());
-          tpRoot.position.set(-center.x, -box.min.y, -center.z);
-          // Far neighborhood along x=-19.5 skips directional shadow casting
-          configureLoadedMeshes(tpRoot, false, true);
-
-          const tpHolder = new THREE.Group();
-          tpHolder.name = 'TrailerParkApproachNeighborhood';
-          tpHolder.add(tpRoot);
-          // Line the neighborhood along the approach road (left-rear) leading to the playground!
-          tpHolder.position.set(-19.5, -0.04, -15.5);
-          tpHolder.rotation.y = Math.PI * 0.5;
-          pg.add(tpHolder);
-        } catch (err) {
-          console.warn('Could not load Trailer Park scene:', err);
-        }
-      })(),
-
-      // C. Schoolyard Playground directly beside the court
-      spawnPlacedModel(pg, {
-        url: '/assets/worlds/primary_schoolyard/playground.usdz',
-        x: -5.5,
-        z: -2.6,
-        rotY: 0.48,
-        targetHeight: 3.15,
-      }),
-
-      // D. Arrival Car (parks right beside Playground / starts back at Trailer Park lane on Arrival Intro)
-      (async () => {
-        const carHolder = await spawnPlacedModel(pg, {
-          url: '/assets/vehicles/honda_odyssey_2021_low_detail_asian_market.glb',
-          x: PARKED_CAR_POS.x,
-          z: PARKED_CAR_POS.z,
-          rotY: PARKED_CAR_POS.rotY,
-          targetHeight: 1.68,
-        });
-        if (carHolder && !disposed) {
-          carHolder.name = 'PlaygroundArrivalCar';
-          arrivalCarHolder = carHolder;
-        }
-      })(),
-
-      // E. Complete Full-Canopy Oak Trees framing the park & playground
-      spawnOakTrees(pg, [
-        { x: 6.4, z: -5.8, height: 6.8, rotY: 0.5, variant: 1 },
-        { x: 6.8, z: 4.8, height: 7.4, rotY: 2.1, variant: 3 },
-        { x: -8.8, z: 5.4, height: 6.6, rotY: 1.3, variant: 5 },
-        { x: 0.8, z: -12.6, height: 7.8, rotY: 3.0, variant: 7 },
-        { x: 10.6, z: -1.4, height: 7.1, rotY: 0.8, variant: 9 },
-      ]),
+    // Mature shade oak trees framing outer school compound & football pitch perimeter
+    void spawnOakTrees(pg, [
+      { x: -12.6, z: -13.8, height: 8.0, rotY: 0.5, variant: 1 },
+      { x: 12.8, z: -14.2, height: 7.6, rotY: 2.1, variant: 3 },
+      { x: -12.5, z: 7.2, height: 7.2, rotY: 1.3, variant: 5 },
+      { x: 11.4, z: 7.4, height: 7.4, rotY: 0.8, variant: 9 },
+      { x: -13.2, z: -29.0, height: 8.6, rotY: 2.8, variant: 7 },
+      { x: 12.4, z: -31.0, height: 8.4, rotY: 1.6, variant: 11 },
+      { x: -7.5, z: -42.5, height: 8.2, rotY: 0.4, variant: 13 },
+      { x: 9.2, z: -44.0, height: 8.5, rotY: 2.4, variant: 15 },
     ]);
   };
 
   // =========================================================================
-  // 4. ENTEBBE LAKESIDE (Golden Sand Beach + Lake Victoria + Boats + Scanned Rocks/Plants)
+  // 4. ENTEBBE LAKESIDE (Curved Golden Cove + Turquoise Lake Victoria + Palms)
   // =========================================================================
   const buildEntebbeLakeside = (pg: THREE.Group) => {
-    const sandGeo = new THREE.PlaneGeometry(180, 120, 14, 14);
-    sandGeo.rotateX(-Math.PI / 2);
-    const sandMat = new THREE.MeshStandardMaterial({
-      color: '#cfb077',
-      roughness: 0.92,
-      metalness: 0.02,
+    entebbeRig = buildEntebbeLakesideEnvironment({
+      isSoftwareGl: options.isSoftwareGl,
+      shadowsEnabled: options.shadowsEnabled,
+      maxAnisotropy: aniso,
     });
-    trackedGeos.add(sandGeo);
-    trackedMats.add(sandMat);
-    const sandMesh = new THREE.Mesh(sandGeo, sandMat);
-    sandMesh.position.set(0, -0.02, 52);
-    sandMesh.userData.__noCastShadow = true;
-    sandMesh.castShadow = false;
-    sandMesh.receiveShadow = true;
-    pg.add(sandMesh);
+    pg.add(entebbeRig.group);
 
-    const waterGeo = new THREE.PlaneGeometry(260, 185, 14, 14);
-    waterGeo.rotateX(-Math.PI / 2);
-    const waterMat = new THREE.MeshStandardMaterial({
-      color: '#186a84',
-      roughness: 0.14,
-      metalness: 0.36,
-      transparent: true,
-      opacity: 0.93,
-    });
-    trackedGeos.add(waterGeo);
-    trackedMats.add(waterMat);
-    const waterMesh = new THREE.Mesh(waterGeo, waterMat);
-    waterMesh.position.set(0, -0.18, -99);
-    waterMesh.userData.__noCastShadow = true;
-    waterMesh.castShadow = false;
-    waterMesh.receiveShadow = true;
-    pg.add(waterMesh);
-    animatedWaterMeshes.push({ mesh: waterMesh, baseY: -0.18 });
-
-    const foamGeo = new THREE.PlaneGeometry(180, 1.45);
-    foamGeo.rotateX(-Math.PI / 2);
-    const foamMat = new THREE.MeshBasicMaterial({
-      color: '#dff4f9',
-      transparent: true,
-      opacity: 0.42,
-    });
-    trackedGeos.add(foamGeo);
-    trackedMats.add(foamMat);
-    const foamMesh = new THREE.Mesh(foamGeo, foamMat);
-    foamMesh.position.set(0, -0.11, -7.4);
-    foamMesh.userData.__noCastShadow = true;
-    foamMesh.userData.__noReceiveShadow = true;
-    foamMesh.castShadow = false;
-    foamMesh.receiveShadow = false;
-    pg.add(foamMesh);
-
-    void Promise.all([
-      (async () => {
-        const b1 = await spawnPlacedModel(pg, {
-          url: '/assets/worlds/entebbe_lakeside/fishing_boat.glb',
-          x: -4.6,
-          z: -9.3,
-          rotY: 0.42,
-          yOffset: -0.14,
-          targetMaxSpan: 6.4,
-          castShadow: false,
-        });
-        if (b1) floatingBoats.push({ holder: b1, baseY: b1.position.y, phase: 0 });
-      })(),
-      (async () => {
-        const b2 = await spawnPlacedModel(pg, {
-          url: '/assets/worlds/entebbe_lakeside/gislinge_viking_boat.glb',
-          x: 6.0,
-          z: -12.0,
-          rotY: -0.38,
-          yOffset: -0.2,
-          targetMaxSpan: 7.2,
-          castShadow: false,
-        });
-        if (b2) floatingBoats.push({ holder: b2, baseY: b2.position.y, phase: 1.7 });
-      })(),
-      spawnPlacedModel(pg, {
-        url: '/assets/worlds/entebbe_lakeside/rock_formation_scan_2.usdz',
-        x: -7.6,
-        z: -6.4,
-        rotY: 0.8,
-        yOffset: -0.1,
-        targetHeight: 1.85,
+    void (async () => {
+      const b1 = await spawnPlacedModel(pg, {
+        url: '/assets/worlds/entebbe_lakeside/fishing_boat.glb',
+        x: 3.1,
+        z: -11.8,
+        rotY: 0.65,
+        targetMaxSpan: 5.2,
         castShadow: false,
-        cloneTo: [
-          { x: 7.4, z: -6.0, rotY: -1.1, scaleMul: 0.92, yOffset: -0.08 },
-          { x: -9.5, z: -1.8, rotY: 2.2, scaleMul: 0.82, yOffset: -0.06 },
-        ],
-      }),
-      spawnScatteredUsdzPlants(
-        pg,
-        '/assets/worlds/entebbe_lakeside/Scanned_Plants_and_Grass_Free_Download.usdz',
-        [
-          { x: -5.4, z: -5.1, rotY: 0.3, targetHeight: 0.72 },
-          { x: -4.2, z: -5.8, rotY: 1.8, targetHeight: 0.58 },
-          { x: 4.3, z: -5.3, rotY: 2.4, targetHeight: 0.68 },
-          { x: 5.5, z: -4.6, rotY: 0.9, targetHeight: 0.62 },
-          { x: -6.2, z: 2.4, rotY: 1.2, targetHeight: 0.75 },
-          { x: 6.1, z: 2.8, rotY: 2.7, targetHeight: 0.68 },
-          { x: -4.9, z: 5.8, rotY: 0.5, targetHeight: 0.64 },
-          { x: 5.2, z: 5.4, rotY: 1.9, targetHeight: 0.7 },
-        ]
-      ),
-      spawnOakTrees(pg, [
-        { x: -9.6, z: 4.4, height: 6.5, rotY: 0.7, variant: 10 },
-        { x: 9.4, z: 4.2, height: 6.8, rotY: 2.1, variant: 12 },
-        { x: -11.5, z: 9.8, height: 7.2, rotY: 1.4, variant: 14 },
-        { x: 11.2, z: 9.6, height: 7.0, rotY: 2.8, variant: 16 },
-      ]),
-    ]);
+      });
+      if (b1) {
+        b1.position.y = -0.82;
+        floatingBoats.push({ holder: b1, baseY: -0.82, phase: 0 });
+      }
+    })();
   };
 
   // =========================================================================
@@ -956,75 +724,34 @@ export function buildWorldEnvironments(options: {
       arrivalActive = false;
     }
     options.onKampalaToggle(place === 'kampala_compound');
-    options.onOuterHillsToggle(place !== 'entebbe_lakeside');
+    options.onOuterHillsToggle(place !== 'entebbe_lakeside' && place !== 'primary_schoolyard');
   };
 
-  const startArrivalSequence = (place: WorldPlaceId): boolean => {
-    if (place !== 'primary_schoolyard') {
-      arrivalActive = false;
-      return false;
-    }
-    ensurePlaceBuilt('primary_schoolyard');
-    arrivalActive = true;
-    arrivalElapsed = 0;
-    return true;
+  const startArrivalSequence = (_place: WorldPlaceId): boolean => {
+    arrivalActive = false;
+    return false;
   };
 
   const skipArrivalSequence = () => {
     arrivalActive = false;
-    if (arrivalCarHolder) {
-      const py = groundHeightAt(PARKED_CAR_POS.x, PARKED_CAR_POS.z);
-      arrivalCarHolder.position.set(PARKED_CAR_POS.x, py, PARKED_CAR_POS.z);
-      arrivalCarHolder.rotation.set(0, PARKED_CAR_POS.rotY, 0);
-    }
   };
 
-  const isArrivalPlaying = () => arrivalActive;
+  const isArrivalPlaying = () => false;
 
-  const getArrivalCameraTarget = (): ArrivalCameraTarget | null => {
-    if (!arrivalActive) return null;
-    const progress = THREE.MathUtils.clamp(arrivalElapsed / ARRIVAL_TOTAL_DURATION, 0, 1);
-
-    // Phase 1 (0 -> 0.56): Car drives down Trailer Park road toward Playground
-    if (progress < 0.56) {
-      const t = progress / 0.56;
-      const ease = 1 - Math.pow(1 - t, 2.2);
-      const carX = THREE.MathUtils.lerp(-15.5, PARKED_CAR_POS.x, ease);
-      const carZ = THREE.MathUtils.lerp(-13.4, PARKED_CAR_POS.z, ease);
-
-      _arrivalCamPos.set(carX + 5.2, 2.65 + (1 - ease) * 0.5, carZ + 5.4);
-      _arrivalLookAt.set(carX - 0.5, 0.95, carZ - 0.3);
-      return { active: true, progress, camPos: _arrivalCamPos, lookAt: _arrivalLookAt, fov: 44 };
-    }
-
-    // Phase 2 (0.56 -> 1.0): Camera sweeps from parked car across playground swings onto Sonko court
-    const t2 = (progress - 0.56) / 0.44;
-    const smooth = t2 * t2 * (3 - 2 * t2);
-    _arrivalCamPos.set(
-      THREE.MathUtils.lerp(-0.65, 0.32, smooth),
-      THREE.MathUtils.lerp(2.65, 3.05, smooth),
-      THREE.MathUtils.lerp(-2.95, 6.25, smooth)
-    );
-    _arrivalLookAt.set(
-      THREE.MathUtils.lerp(-5.4, 0.25, smooth),
-      THREE.MathUtils.lerp(1.15, 0.35, smooth),
-      THREE.MathUtils.lerp(-4.5, 0.25, smooth)
-    );
-    return {
-      active: true,
-      progress,
-      camPos: _arrivalCamPos,
-      lookAt: _arrivalLookAt,
-      fov: THREE.MathUtils.lerp(44, 45, smooth),
-    };
-  };
+  const getArrivalCameraTarget = (): ArrivalCameraTarget | null => null;
 
   // Start Kampala Compound extras immediately
   setPlace('kampala_compound');
 
-  const update = (dt: number, elapsed: number) => {
+  const update = (dt: number, elapsed: number, wetness = 0) => {
     for (const mixer of mixers) {
       mixer.update(dt);
+    }
+    if (entebbeRig && entebbeRig.group.parent?.visible) {
+      entebbeRig.update(elapsed, wetness);
+    }
+    if (schoolyardRig && schoolyardRig.group.parent?.visible) {
+      schoolyardRig.update(elapsed, wetness);
     }
     for (const w of animatedWaterMeshes) {
       if (w.mesh.parent?.visible) {
@@ -1037,33 +764,6 @@ export function buildWorldEnvironments(options: {
         b.holder.rotation.z = Math.sin(elapsed * 1.1 + b.phase) * 0.028;
       }
     }
-
-    // Drive Car Arrival animation when active
-    if (arrivalActive) {
-      arrivalElapsed += dt;
-      const tDrive = THREE.MathUtils.clamp(arrivalElapsed / (ARRIVAL_TOTAL_DURATION * 0.56), 0, 1);
-      const easeDrive = 1 - Math.pow(1 - tDrive, 2.2);
-
-      if (arrivalCarHolder) {
-        const cx = THREE.MathUtils.lerp(-15.5, PARKED_CAR_POS.x, easeDrive);
-        const cz = THREE.MathUtils.lerp(-13.4, PARKED_CAR_POS.z, easeDrive);
-        const roadBounce = tDrive < 0.96 ? Math.sin(arrivalElapsed * 24) * 0.012 : 0;
-        const brakePitch =
-          tDrive > 0.72 && tDrive < 0.98
-            ? Math.sin(((tDrive - 0.72) / 0.26) * Math.PI) * 0.032
-            : 0;
-        arrivalCarHolder.position.set(cx, groundHeightAt(cx, cz) + roadBounce, cz);
-        arrivalCarHolder.rotation.set(
-          brakePitch,
-          THREE.MathUtils.lerp(0.95, PARKED_CAR_POS.rotY, easeDrive),
-          0
-        );
-      }
-
-      if (arrivalElapsed >= ARRIVAL_TOTAL_DURATION) {
-        skipArrivalSequence();
-      }
-    }
   };
 
   const setShadowsEnabled = (enabled: boolean) => {
@@ -1074,11 +774,17 @@ export function buildWorldEnvironments(options: {
         obj.receiveShadow = active && !obj.userData.__noReceiveShadow;
       }
     });
+    entebbeRig?.setShadowsEnabled(enabled);
+    schoolyardRig?.setShadowsEnabled(enabled);
   };
 
   const dispose = () => {
     disposed = true;
     arrivalActive = false;
+    entebbeRig?.dispose();
+    entebbeRig = null;
+    schoolyardRig?.dispose();
+    schoolyardRig = null;
     for (const m of mixers) m.stopAllAction();
     mixers.length = 0;
     for (const im of instancedMeshesToDispose) im.dispose();

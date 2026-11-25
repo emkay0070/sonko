@@ -2158,22 +2158,7 @@ async function startServer() {
     res.send(renderSitemapXml(origin));
   });
 
-  const COMPLIANCE_PAGES: CompliancePageId[] = [
-    'about',
-    'how-to-play',
-    'privacy-policy',
-    'terms',
-    'contact',
-  ];
-
-  for (const pageId of COMPLIANCE_PAGES) {
-    app.get([`/${pageId}`, `/${pageId}.html`], (req: Request, res: Response) => {
-      const cfg = resolveAdsenseRuntimeConfig();
-      const origin = resolveSafeOrigin(req);
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.send(renderComplianceHtmlPage(pageId, origin, cfg));
-    });
-  }
+  // Website routes (/play, /how-to-play, /about, /privacy, /terms, /contact) are served by the React SPA.
 
   app.post(
     '/contact',
@@ -2264,18 +2249,31 @@ async function startServer() {
       next();
     });
 
-    app.get(['/', '/index.html'], async (req: Request, res: Response, next) => {
-      try {
-        const indexPath = path.resolve(__dirname, 'index.html');
-        const rawHtml = fs.readFileSync(indexPath, 'utf8');
-        const transformed = await vite.transformIndexHtml(req.originalUrl, rawHtml);
-        const cfg = resolveAdsenseRuntimeConfig();
-        const finalHtml = injectAdsenseHeadIntoHtml(transformed, cfg);
-        res.status(200).setHeader('Content-Type', 'text/html; charset=utf-8').end(finalHtml);
-      } catch (err) {
-        next(err);
+    app.get(
+      [
+        '/',
+        '/index.html',
+        '/play',
+        '/how-to-play',
+        '/about',
+        '/privacy',
+        '/privacy-policy',
+        '/terms',
+        '/contact',
+      ],
+      async (req: Request, res: Response, next) => {
+        try {
+          const indexPath = path.resolve(__dirname, 'index.html');
+          const rawHtml = fs.readFileSync(indexPath, 'utf8');
+          const transformed = await vite.transformIndexHtml(req.originalUrl, rawHtml);
+          const cfg = resolveAdsenseRuntimeConfig();
+          const finalHtml = injectAdsenseHeadIntoHtml(transformed, cfg);
+          res.status(200).setHeader('Content-Type', 'text/html; charset=utf-8').end(finalHtml);
+        } catch (err) {
+          next(err);
+        }
       }
-    });
+    );
 
     app.use(vite.middlewares);
   } else {

@@ -314,7 +314,94 @@ export function buildDistantWorldSurroundings(options: {
 
   buildMountainRidges(mountainRingGroup, -20, 200);
   buildMountainRidges(northSectorGroup, 200, 340);
-  buildMountainRidges(islandGroup, 232, 308, 42);
+
+  // Soft distant green Lake Victoria islands & headlands (photorealistic aerial perspective across horizon)
+  const buildLakeIslands = (target: THREE.Group) => {
+    const segs = 68;
+    const islGeo = new THREE.BufferGeometry();
+    const verts: number[] = [];
+    const cols: number[] = [];
+    const cShore = new THREE.Color('#c8be9e');
+    const cMid = new THREE.Color('#637a5b');
+    const cTop = new THREE.Color('#7d9589');
+    const tmp = new THREE.Color();
+
+    const startDeg = 186;
+    const endDeg = 354;
+    const step = (endDeg - startDeg) / segs;
+
+    for (let i = 0; i < segs; i++) {
+      const a0 = THREE.MathUtils.degToRad(startDeg + i * step);
+      const a1 = THREE.MathUtils.degToRad(startDeg + (i + 1) * step);
+      const t0 = i / segs;
+      const t1 = (i + 1) / segs;
+
+      const rIn = 132;
+      const rMid = 158;
+      const rOut = 195;
+
+      const wave0 =
+        Math.max(0, Math.sin(t0 * Math.PI * 1.9 + 0.35)) * 3.8 +
+        Math.max(0, Math.sin((t0 - 0.56) * Math.PI * 2.4)) * 2.9 +
+        Math.sin(t0 * 11.0) * 0.65;
+      const wave1 =
+        Math.max(0, Math.sin(t1 * Math.PI * 1.9 + 0.35)) * 3.8 +
+        Math.max(0, Math.sin((t1 - 0.56) * Math.PI * 2.4)) * 2.9 +
+        Math.sin(t1 * 11.0) * 0.65;
+
+      const h0 = Math.max(-0.55, wave0 - 0.35);
+      const h1 = Math.max(-0.55, wave1 - 0.35);
+
+      const x0i = Math.cos(a0) * rIn;
+      const z0i = Math.sin(a0) * rIn;
+      const x1i = Math.cos(a1) * rIn;
+      const z1i = Math.sin(a1) * rIn;
+
+      const x0m = Math.cos(a0) * rMid;
+      const z0m = Math.sin(a0) * rMid;
+      const x1m = Math.cos(a1) * rMid;
+      const z1m = Math.sin(a1) * rMid;
+
+      const x0o = Math.cos(a0) * rOut;
+      const z0o = Math.sin(a0) * rOut;
+      const x1o = Math.cos(a1) * rOut;
+      const z1o = Math.sin(a1) * rOut;
+
+      const p0 = tmp.copy(cMid).lerp(cTop, Math.min(1, Math.max(0, h0) / 4.2)).clone();
+      const p1 = tmp.copy(cMid).lerp(cTop, Math.min(1, Math.max(0, h1) / 4.2)).clone();
+
+      const push = (
+        ax: number, ay: number, az: number, ca: THREE.Color,
+        bx: number, by: number, bz: number, cb: THREE.Color,
+        cx: number, cy: number, cz: number, cc: THREE.Color
+      ) => {
+        verts.push(ax, ay, az, bx, by, bz, cx, cy, cz);
+        cols.push(ca.r, ca.g, ca.b, cb.r, cb.g, cb.b, cc.r, cc.g, cc.b);
+      };
+
+      push(x0i, -0.55, z0i, cShore, x0m, h0, z0m, p0, x1m, h1, z1m, p1);
+      push(x0i, -0.55, z0i, cShore, x1m, h1, z1m, p1, x1i, -0.55, z1i, cShore);
+      push(x0m, h0, z0m, p0, x0o, -0.55, z0o, cTop, x1o, -0.55, z1o, cTop);
+      push(x0m, h0, z0m, p0, x1o, -0.55, z1o, cTop, x1m, h1, z1m, p1);
+    }
+
+    islGeo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+    islGeo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+    islGeo.computeVertexNormals();
+    trackedGeos.add(islGeo);
+
+    const islMat = new THREE.MeshStandardMaterial({
+      vertexColors: true,
+      roughness: 0.96,
+      metalness: 0.0,
+    });
+    trackedMats.add(islMat);
+    const islMesh = new THREE.Mesh(islGeo, islMat);
+    islMesh.castShadow = false;
+    islMesh.receiveShadow = false;
+    target.add(islMesh);
+  };
+  buildLakeIslands(islandGroup);
 
   // 2. Instanced Rock Outcrops along Foothills (zero shadow-cast cost, single draw call per sector)
   const rockGeo = new THREE.DodecahedronGeometry(1.0, 1);
@@ -591,10 +678,11 @@ export function buildDistantWorldSurroundings(options: {
   const setPlace = (place: WorldPlaceId) => {
     activePlace = place;
     const isLake = place === 'entebbe_lakeside';
-    northSectorGroup.visible = !isLake;
+    const isSchool = place === 'primary_schoolyard';
+    northSectorGroup.visible = !isLake && !isSchool;
     islandGroup.visible = isLake;
-    landPropsGroup.visible = true;
-    mountainRingGroup.visible = true;
+    landPropsGroup.visible = !isLake && !isSchool;
+    mountainRingGroup.visible = !isLake && !isSchool;
   };
 
   setPlace(activePlace);
