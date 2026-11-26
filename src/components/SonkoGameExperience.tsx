@@ -1210,6 +1210,7 @@ export function SonkoGameExperience() {
 
   return (
     <main className="relative w-screen h-screen overflow-hidden bg-[#1A0D08] text-[#FAF3E8]">
+      <h1 className="sr-only">Play Sonko — 3D Ugandan Courtyard Hopscotch</h1>
       {/* Unified Full-Viewport 3D Ugandan Compound & Game Engine */}
       <UgandanCompoundViewport
         ref={compoundRef}

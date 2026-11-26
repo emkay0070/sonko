@@ -1,0 +1,15 @@
+# Robots policy for Sonko — Ugandan Courtyard Hopscotch
+User-agent: Mediapartners-Google
+Allow: /
+
+User-agent: Google-Display-Ads-Bot
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://sonko-ug.vercel.app/sitemap.xml

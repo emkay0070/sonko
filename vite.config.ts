@@ -4,12 +4,83 @@ import fs from 'fs';
 import path from 'path';
 import {defineConfig} from 'vite';
 import {VitePWA} from 'vite-plugin-pwa';
+import {type AppRoute, SITE_ORIGIN} from './src/seo/routeMeta.ts';
+import {applyRouteSeoToHtml} from './src/seo/staticPrerender.ts';
+
+const STATIC_HTML_TARGETS: Array<{ route: AppRoute; fileName: string }> = [
+  { route: '/', fileName: 'index.html' },
+  { route: '/play', fileName: 'play.html' },
+  { route: '/how-to-play', fileName: 'how-to-play.html' },
+  { route: '/about', fileName: 'about.html' },
+  { route: '/privacy', fileName: 'privacy.html' },
+  { route: '/terms', fileName: 'terms.html' },
+  { route: '/contact', fileName: 'contact.html' },
+  { route: '/404', fileName: '404.html' },
+];
 
 export default defineConfig(() => {
   return {
     plugins: [
       react(),
       tailwindcss(),
+      {
+        name: 'inject-adsense-head-build',
+        apply: 'build',
+        transformIndexHtml(html: string): string {
+          const clientId = String(
+            process.env.ADSENSE_CLIENT_ID || process.env.VITE_ADSENSE_CLIENT_ID || ''
+          ).trim();
+          if (!/^ca-pub-\d{10,20}$/.test(clientId)) {
+            return html;
+          }
+          if (html.includes('name="google-adsense-account"')) {
+            return html;
+          }
+          const testAttr =
+            String(process.env.ADSENSE_TEST_MODE || process.env.VITE_ADSENSE_TEST_MODE || '')
+              .trim()
+              .toLowerCase() === 'true'
+              ? ' data-adbreak-test="on"'
+              : '';
+          const snippet = [
+            `    <meta name="google-adsense-account" content="${clientId}" />`,
+            `    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(clientId)}" crossorigin="anonymous"${testAttr}></script>`,
+            `    <script>window.adsbygoogle=window.adsbygoogle||[];var adBreak=adConfig=function(o){window.adsbygoogle.push(o);};</script>`,
+          ].join('\n');
+          return html.replace('</head>', `${snippet}\n  </head>`);
+        },
+      },
+      {
+        name: 'prerender-static-routes',
+        apply: 'build',
+        writeBundle(): void {
+          const distDir = path.resolve(__dirname, 'dist');
+          const indexFile = path.join(distDir, 'index.html');
+          if (!fs.existsSync(indexFile)) {
+            return;
+          }
+          const baseHtml = fs.readFileSync(indexFile, 'utf8');
+          const resolvedOrigin = (() => {
+            const raw = String(process.env.SITE_URL || process.env.VITE_SITE_URL || '').trim();
+            if (raw) {
+              try {
+                const u = new URL(raw);
+                if (u.protocol === 'http:' || u.protocol === 'https:') {
+                  return u.origin;
+                }
+              } catch {
+                // ignore invalid SITE_URL
+              }
+            }
+            return SITE_ORIGIN;
+          })();
+
+          for (const target of STATIC_HTML_TARGETS) {
+            const html = applyRouteSeoToHtml(baseHtml, target.route, resolvedOrigin);
+            fs.writeFileSync(path.join(distDir, target.fileName), html, 'utf8');
+          }
+        },
+      },
       VitePWA({
         registerType: 'autoUpdate',
         includeAssets: [
@@ -54,6 +125,7 @@ export default defineConfig(() => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,jpg,svg,woff,woff2,txt,mp3,ogg,wav}'],
+          globIgnores: ['404.html'],
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
           navigateFallbackDenylist: [
             /^\/api\//,
@@ -112,33 +184,6 @@ export default defineConfig(() => {
           enabled: false,
         },
       }),
-      {
-        name: 'inject-adsense-head-build',
-        apply: 'build',
-        transformIndexHtml(html: string): string {
-          const clientId = String(
-            process.env.ADSENSE_CLIENT_ID || process.env.VITE_ADSENSE_CLIENT_ID || ''
-          ).trim();
-          if (!/^ca-pub-\d{10,20}$/.test(clientId)) {
-            return html;
-          }
-          if (html.includes('name="google-adsense-account"')) {
-            return html;
-          }
-          const testAttr =
-            String(process.env.ADSENSE_TEST_MODE || process.env.VITE_ADSENSE_TEST_MODE || '')
-              .trim()
-              .toLowerCase() === 'true'
-              ? ' data-adbreak-test="on"'
-              : '';
-          const snippet = [
-            `    <meta name="google-adsense-account" content="${clientId}" />`,
-            `    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(clientId)}" crossorigin="anonymous"${testAttr}></script>`,
-            `    <script>window.adsbygoogle=window.adsbygoogle||[];var adBreak=adConfig=function(o){window.adsbygoogle.push(o);};</script>`,
-          ].join('\n');
-          return html.replace('</head>', `${snippet}\n  </head>`);
-        },
-      },
       // Copies src/assets into dist/ so root-relative URLs like
       // "/src/assets/images/..." (e.g. generate_image output) still resolve
       // in production builds. Do not remove.

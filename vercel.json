@@ -1,8 +1,16 @@
 {
-  "rewrites": [
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "redirects": [
     {
-      "source": "/((?!api/|assets/|models/|dialogues/|audio/|sw\\.js|workbox-.*|manifest\\.webmanifest|ads\\.txt|robots\\.txt|sitemap\\.xml|icon\\.svg|apple-touch-icon\\.png|pwa-.*\\.png).*)",
-      "destination": "/index.html"
+      "source": "/privacy-policy",
+      "destination": "/privacy",
+      "permanent": true
+    },
+    {
+      "source": "/privacy-policy.html",
+      "destination": "/privacy",
+      "permanent": true
     }
   ]
 }

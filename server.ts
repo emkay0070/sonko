@@ -17,6 +17,8 @@ import {
   resolveAdsenseRuntimeConfig,
   resolveSafeOrigin,
 } from './server/adsenseCompliance.ts';
+import { normalizePathname } from './src/seo/routeMeta.ts';
+import { applyRouteSeoToHtml } from './src/seo/staticPrerender.ts';
 
 type CourtSize = 5 | 10;
 type CourtVenueId = 'kampala_murram' | 'entebbe_sand' | 'jinja_rain' | 'ndere_night';
@@ -2254,20 +2256,34 @@ async function startServer() {
         '/',
         '/index.html',
         '/play',
+        '/play.html',
         '/how-to-play',
+        '/how-to-play.html',
         '/about',
+        '/about.html',
         '/privacy',
+        '/privacy.html',
         '/privacy-policy',
+        '/privacy-policy.html',
         '/terms',
+        '/terms.html',
         '/contact',
+        '/contact.html',
       ],
       async (req: Request, res: Response, next) => {
         try {
+          if (req.path === '/privacy-policy' || req.path === '/privacy-policy.html') {
+            res.redirect(301, '/privacy');
+            return;
+          }
+          const route = normalizePathname(req.path);
+          const origin = resolveSafeOrigin(req);
           const indexPath = path.resolve(__dirname, 'index.html');
           const rawHtml = fs.readFileSync(indexPath, 'utf8');
           const transformed = await vite.transformIndexHtml(req.originalUrl, rawHtml);
+          const routeHtml = applyRouteSeoToHtml(transformed, route, origin);
           const cfg = resolveAdsenseRuntimeConfig();
-          const finalHtml = injectAdsenseHeadIntoHtml(transformed, cfg);
+          const finalHtml = injectAdsenseHeadIntoHtml(routeHtml, cfg);
           res.status(200).setHeader('Content-Type', 'text/html; charset=utf-8').end(finalHtml);
         } catch (err) {
           next(err);
@@ -2276,16 +2292,54 @@ async function startServer() {
     );
 
     app.use(vite.middlewares);
+
+    // Unknown HTML routes in dev return HTTP 404 with NotFoundPage shell
+    app.get('*', async (req: Request, res: Response, next) => {
+      if (req.path.startsWith('/api/') || /\.[a-z0-9]+$/i.test(req.path)) {
+        next();
+        return;
+      }
+      try {
+        const origin = resolveSafeOrigin(req);
+        const indexPath = path.resolve(__dirname, 'index.html');
+        const rawHtml = fs.readFileSync(indexPath, 'utf8');
+        const transformed = await vite.transformIndexHtml(req.originalUrl, rawHtml);
+        const routeHtml = applyRouteSeoToHtml(transformed, '/404', origin);
+        const cfg = resolveAdsenseRuntimeConfig();
+        const finalHtml = injectAdsenseHeadIntoHtml(routeHtml, cfg);
+        res.status(404).setHeader('Content-Type', 'text/html; charset=utf-8').end(finalHtml);
+      } catch (err) {
+        next(err);
+      }
+    });
   } else {
     const distDir = path.resolve(__dirname, 'dist');
     if (fs.existsSync(distDir)) {
       app.use(express.static(distDir, { index: false }));
-      app.get('*', (_req: Request, res: Response) => {
-        const indexFile = path.join(distDir, 'index.html');
+      app.get('*', (req: Request, res: Response) => {
+        if (req.path === '/privacy-policy' || req.path === '/privacy-policy.html') {
+          res.redirect(301, '/privacy');
+          return;
+        }
+        const route = normalizePathname(req.path);
+        const isNotFound = route === '/404';
+        const targetFileName =
+          route === '/'
+            ? 'index.html'
+            : route === '/404'
+              ? '404.html'
+              : `${route.slice(1)}.html`;
+        const candidateFile = path.join(distDir, targetFileName);
+        const indexFile = fs.existsSync(candidateFile) ? candidateFile : path.join(distDir, 'index.html');
         const rawHtml = fs.readFileSync(indexFile, 'utf8');
+        const origin = resolveSafeOrigin(req);
+        const routeHtml = applyRouteSeoToHtml(rawHtml, route, origin);
         const cfg = resolveAdsenseRuntimeConfig();
-        const finalHtml = injectAdsenseHeadIntoHtml(rawHtml, cfg);
-        res.status(200).setHeader('Content-Type', 'text/html; charset=utf-8').send(finalHtml);
+        const finalHtml = injectAdsenseHeadIntoHtml(routeHtml, cfg);
+        res
+          .status(isNotFound ? 404 : 200)
+          .setHeader('Content-Type', 'text/html; charset=utf-8')
+          .send(finalHtml);
       });
     }
   }
