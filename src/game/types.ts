@@ -136,6 +136,9 @@ export interface HudSnapshot {
   teamTargets: [number, number];
   phase: TurnPhase;
   balance: number; // 0..100
+  balanceSway: number; // -1.05..1.05
+  isBalancingOneFoot: boolean;
+  hopNextStepLabel: 'Hop' | 'Land 2-Feet' | 'Leap' | 'Scoop' | null;
   aimPower: number; // 0..1
   isCharging: boolean;
   statusBanner: string;

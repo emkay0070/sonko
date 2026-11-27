@@ -6,6 +6,7 @@ import {
   Flame,
   Home,
   Settings,
+  SlidersHorizontal,
   Swords,
   Trophy,
   Users,
@@ -43,6 +44,7 @@ interface LobbyTopBarProps {
   onOpenStall: () => void;
   onOpenStreak: () => void;
   onOpenSettings: () => void;
+  onToggleViewControls: () => void;
 }
 
 export function LobbyTopBar({
@@ -58,6 +60,7 @@ export function LobbyTopBar({
   onOpenStall,
   onOpenStreak,
   onOpenSettings,
+  onToggleViewControls,
 }: LobbyTopBarProps) {
   return (
     <>
@@ -206,6 +209,17 @@ export function LobbyTopBar({
             <div className="hidden sm:block">
               <PWAInstallButton variant="title" />
             </div>
+
+            <button
+              type="button"
+              onClick={onToggleViewControls}
+              aria-label="Toggle 3D Camera and View Controls (H)"
+              title="Camera, Pose, Sky & Weather Controls (H)"
+              className="w-8 h-8 lg:w-auto lg:px-2.5 inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#24120C] hover:bg-[#321911] border border-[#FAF3E8]/12 text-xs font-medium text-[#E5D3BE] hover:text-white transition-colors whitespace-nowrap cursor-pointer shrink-0"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5 text-amber-300 shrink-0" aria-hidden="true" />
+              <span className="hidden lg:inline">View</span>
+            </button>
 
             <button
               type="button"

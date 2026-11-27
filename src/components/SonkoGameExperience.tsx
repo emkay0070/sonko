@@ -1237,6 +1237,7 @@ export function SonkoGameExperience() {
               setDailyStreakOpen(true);
             }}
             onOpenSettings={() => setSettingsOpen(true)}
+            onToggleViewControls={() => compoundRef.current?.toggleViewDock()}
           />
 
           {titlePeekMode ? (
@@ -1561,7 +1562,7 @@ export function SonkoGameExperience() {
                   });
                 }}
                 aria-label="Switch match camera angle"
-                className="sm:hidden min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-[#1F100B]/90 hover:bg-[#331B13] border border-[#FAF3E8]/15 text-[#FAF3E8] transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-amber-400"
+                className="lg:hidden min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-[#1F100B]/90 hover:bg-[#331B13] border border-[#FAF3E8]/15 text-[#FAF3E8] transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-amber-400"
               >
                 <Camera className="w-4 h-4 text-amber-300" aria-hidden="true" />
               </button>
@@ -1613,14 +1614,35 @@ export function SonkoGameExperience() {
               </div>
             )}
 
-            <div className="w-full flex items-end justify-between gap-3">
+            <div className="w-full flex items-end justify-between gap-2.5 sm:gap-3">
               <div className="flex items-end gap-2">
+                {isAimPhase && isLocalTurn && (
+                  <div className="pointer-events-auto lg:hidden flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => compoundRef.current?.nudgeAim(-1)}
+                      aria-label="Aim stone left"
+                      className="min-w-[46px] min-h-[46px] flex items-center justify-center rounded-xl bg-[#1F100B]/92 border border-[#FAF3E8]/20 text-[#FAF3E8] active:scale-95 cursor-pointer"
+                    >
+                      <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => compoundRef.current?.nudgeAim(1)}
+                      aria-label="Aim stone right"
+                      className="min-w-[46px] min-h-[46px] flex items-center justify-center rounded-xl bg-[#1F100B]/92 border border-[#FAF3E8]/20 text-[#FAF3E8] active:scale-95 cursor-pointer"
+                    >
+                      <ArrowRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                )}
+
                 {isHopPhase && isLocalTurn && (
                   <button
                     type="button"
                     onClick={() => compoundRef.current?.nudgeBalance(-1)}
                     aria-label="Lean left to balance"
-                    className="pointer-events-auto sm:hidden min-w-[48px] min-h-[48px] flex items-center justify-center rounded-lg bg-[#1F100B]/90 border border-[#FAF3E8]/20 text-[#FAF3E8] active:scale-95"
+                    className="pointer-events-auto lg:hidden min-w-[48px] min-h-[48px] flex items-center justify-center rounded-xl bg-[#1F100B]/92 border border-[#FAF3E8]/20 text-[#FAF3E8] active:scale-95 cursor-pointer"
                   >
                     <ArrowLeft className="w-5 h-5" />
                   </button>
@@ -1630,7 +1652,7 @@ export function SonkoGameExperience() {
                 <div
                   role="group"
                   aria-label="Quick match camera angle"
-                  className="pointer-events-auto hidden sm:flex items-center gap-1 p-1 bg-[#1F100B]/92 border border-[#FAF3E8]/15 rounded-lg"
+                  className="pointer-events-auto hidden lg:flex items-center gap-1 p-1 bg-[#1F100B]/92 border border-[#FAF3E8]/15 rounded-lg"
                 >
                   <Camera className="w-3.5 h-3.5 text-amber-300 ml-1.5 mr-0.5" aria-hidden="true" />
                   {(
@@ -1662,7 +1684,7 @@ export function SonkoGameExperience() {
               </div>
 
               {!arrivalPlaying && (
-                <div className="mx-auto bg-[#1F100B]/90 border border-[#FAF3E8]/15 rounded-lg px-4 py-2 text-xs sm:text-sm text-center text-[#FAF3E8] max-w-xl">
+                <div className="mx-auto bg-[#1F100B]/90 border border-[#FAF3E8]/15 rounded-lg px-3.5 sm:px-4 py-2 text-xs sm:text-sm text-center text-[#FAF3E8] max-w-xl">
                   <span className={hud.foulReason ? 'text-red-300 font-medium' : 'text-[#FAF3E8]'}>
                     {hud.statusBanner}
                   </span>
@@ -1670,12 +1692,34 @@ export function SonkoGameExperience() {
               )}
 
               <div className="flex items-end gap-2">
-                {isHopPhase && isLocalTurn ? (
-                  <div className="pointer-events-auto sm:hidden flex items-center gap-2">
+                {isAimPhase && isLocalTurn ? (
+                  <button
+                    type="button"
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      compoundRef.current?.startTossCharge();
+                    }}
+                    onPointerUp={() => compoundRef.current?.releaseTossCharge()}
+                    onPointerCancel={() => compoundRef.current?.releaseTossCharge()}
+                    onPointerLeave={() => {
+                      if (hud.isCharging) {
+                        compoundRef.current?.releaseTossCharge();
+                      }
+                    }}
+                    className={`pointer-events-auto lg:hidden px-4 min-h-[48px] rounded-xl font-display font-extrabold text-xs tracking-wide select-none touch-none transition-transform active:scale-95 cursor-pointer whitespace-nowrap border ${
+                      hud.isCharging
+                        ? 'bg-[#FBBF24] border-amber-200 text-[#1A0B07]'
+                        : 'bg-[#D97706] border-[#FBBF24] text-[#1A0B07]'
+                    }`}
+                  >
+                    {hud.isCharging ? 'Release!' : 'Hold Toss'}
+                  </button>
+                ) : isHopPhase && isLocalTurn ? (
+                  <div className="pointer-events-auto lg:hidden flex items-center gap-1.5">
                     <button
                       type="button"
                       onClick={() => compoundRef.current?.triggerAction()}
-                      className="px-3 min-h-[48px] rounded-lg bg-[#D97706] text-[#1A0B07] font-bold text-xs active:scale-95"
+                      className="px-4 min-h-[48px] rounded-xl bg-[#D97706] border border-[#FBBF24] text-[#1A0B07] font-display font-extrabold text-xs active:scale-95 cursor-pointer whitespace-nowrap"
                     >
                       {hud.phase === 'PICKUP_STONE' ? 'Scoop' : 'Hop'}
                     </button>
@@ -1683,13 +1727,13 @@ export function SonkoGameExperience() {
                       type="button"
                       onClick={() => compoundRef.current?.nudgeBalance(1)}
                       aria-label="Lean right to balance"
-                      className="min-w-[48px] min-h-[48px] flex items-center justify-center rounded-lg bg-[#1F100B]/90 border border-[#FAF3E8]/20 text-[#FAF3E8] active:scale-95"
+                      className="min-w-[48px] min-h-[48px] flex items-center justify-center rounded-xl bg-[#1F100B]/92 border border-[#FAF3E8]/20 text-[#FAF3E8] active:scale-95 cursor-pointer"
                     >
                       <ArrowRight className="w-5 h-5" />
                     </button>
                   </div>
                 ) : (
-                  <div className="hidden sm:block w-36" />
+                  <div className="hidden lg:block w-36" />
                 )}
               </div>
             </div>

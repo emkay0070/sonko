@@ -1,5 +1,18 @@
 import React, { useEffect } from 'react';
-import { Camera, CloudRain, ExternalLink, Gamepad2, Monitor, RotateCcw, ShieldCheck, Volume2, X } from 'lucide-react';
+import {
+  Camera,
+  CloudRain,
+  Crosshair,
+  ExternalLink,
+  Gamepad2,
+  Monitor,
+  RotateCcw,
+  ShieldCheck,
+  Smartphone,
+  Volume2,
+  X,
+} from 'lucide-react';
+import { TiltStatus } from '../hooks/useDeviceTilt';
 import { Link } from '../router';
 import {
   DEFAULT_SETTINGS,
@@ -7,6 +20,7 @@ import {
   GraphicsQuality,
   QUALITY_PRESET_VALUES,
   SonkoSettings,
+  TouchControlsMode,
 } from '../game/settings';
 
 interface SettingsModalProps {
@@ -14,6 +28,10 @@ interface SettingsModalProps {
   onUpdateSettings: (patch: Partial<SonkoSettings>) => void;
   onResetDefaults: () => void;
   onClose: () => void;
+  tiltSupported?: boolean;
+  tiltStatus?: TiltStatus;
+  onRequestTiltEnable?: () => Promise<boolean>;
+  onCalibrateTilt?: () => void;
 }
 
 const PIXEL_DENSITY_OPTIONS: Array<{ value: number; label: string }> = [
@@ -29,11 +47,21 @@ const CAMERA_OPTIONS: Array<{ id: DefaultMatchCamera; label: string; desc: strin
   { id: 'top_aim', label: 'Top-Down', desc: 'Overhead court & chalk boundary view' },
 ];
 
+const TOUCH_MODE_OPTIONS: Array<{ id: TouchControlsMode; label: string; desc: string }> = [
+  { id: 'auto', label: 'Auto', desc: 'Shows on phones & tablets' },
+  { id: 'always', label: 'Always On', desc: 'Enable on touchscreen laptops too' },
+  { id: 'off', label: 'Off', desc: 'Keyboard & mouse / direct tap only' },
+];
+
 export function SettingsModal({
   settings,
   onUpdateSettings,
   onResetDefaults,
   onClose,
+  tiltSupported = true,
+  tiltStatus = 'disabled',
+  onRequestTiltEnable,
+  onCalibrateTilt,
 }: SettingsModalProps) {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -338,6 +366,155 @@ export function SettingsModal({
               </button>
             </div>
 
+            {/* Touch & Motion Tilt Controls */}
+            <div className="pt-3 border-t border-[#FAF3E8]/10 flex flex-col gap-3.5">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-200">
+                <Smartphone className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>Touch &amp; Device Tilt Controls</span>
+              </div>
+
+              <div>
+                <div className="text-xs font-medium text-[#E5D3BE]/80 mb-2">
+                  Virtual Touch Controls
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {TOUCH_MODE_OPTIONS.map((opt) => {
+                    const active = settings.touchControlsMode === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => onUpdateSettings({ touchControlsMode: opt.id })}
+                        className={`text-left p-2.5 rounded-lg border transition-colors cursor-pointer ${
+                          active
+                            ? 'bg-[#341A11] border-amber-400 text-[#FAF3E8]'
+                            : 'bg-[#120805] border-[#FAF3E8]/12 text-[#E5D3BE]/80 hover:border-[#FAF3E8]/30'
+                        }`}
+                      >
+                        <div className="text-xs font-semibold text-[#FAF3E8]">{opt.label}</div>
+                        <div className="text-[11px] text-[#E5D3BE]/65 mt-0.5">{opt.desc}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-4 bg-[#120805] border border-[#FAF3E8]/10 rounded-lg px-3.5 py-3">
+                <div>
+                  <div className="text-sm font-medium text-[#FAF3E8]">
+                    Device Tilt Steering (Optional)
+                  </div>
+                  <div className="text-xs text-[#E5D3BE]/65">
+                    Tilt phone left or right to balance on one foot &amp; fine-tune aim
+                  </div>
+                  {settings.tiltEnabled &&
+                    (tiltStatus === 'denied' || tiltStatus === 'unsupported' || !tiltSupported) && (
+                      <div className="text-[11px] text-amber-300 mt-1">
+                        Motion sensor unavailable or permission denied — falling back cleanly to touch controls.
+                      </div>
+                    )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {settings.tiltEnabled && tiltStatus === 'active' && onCalibrateTilt && (
+                    <button
+                      type="button"
+                      onClick={onCalibrateTilt}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#26140D] hover:bg-[#381E14] border border-amber-400/35 text-xs font-semibold text-amber-200 transition-colors cursor-pointer whitespace-nowrap"
+                    >
+                      <Crosshair className="w-3.5 h-3.5" aria-hidden="true" />
+                      <span>Calibrate</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={settings.tiltEnabled}
+                    onClick={() => {
+                      if (settings.tiltEnabled) {
+                        onUpdateSettings({ tiltEnabled: false });
+                      } else if (onRequestTiltEnable) {
+                        void onRequestTiltEnable().then((ok) => {
+                          onUpdateSettings({ tiltEnabled: ok });
+                        });
+                      } else {
+                        onUpdateSettings({ tiltEnabled: true });
+                      }
+                    }}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer whitespace-nowrap ${
+                      settings.tiltEnabled
+                        ? 'bg-[#D97706] border-[#F59E0B] text-[#1A0B07]'
+                        : 'bg-[#26140D] border-[#FAF3E8]/15 text-[#E5D3BE]/75 hover:text-white'
+                    }`}
+                  >
+                    {settings.tiltEnabled ? 'On' : 'Off'}
+                  </button>
+                </div>
+              </div>
+
+              {settings.tiltEnabled && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-[#120805] border border-[#FAF3E8]/10 rounded-lg px-3.5 py-3">
+                  <label className="flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-medium text-[#E5D3BE]">Tilt Sensitivity</span>
+                      <span className="font-mono-num text-amber-300 font-semibold">
+                        {settings.tiltSensitivity.toFixed(1)}x
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0.5}
+                      max={2.0}
+                      step={0.1}
+                      value={settings.tiltSensitivity}
+                      onChange={(e) =>
+                        onUpdateSettings({ tiltSensitivity: Number(e.target.value) })
+                      }
+                      className="accent-[#F59E0B] cursor-pointer"
+                    />
+                  </label>
+
+                  <label className="flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-medium text-[#E5D3BE]">Tilt Smoothing</span>
+                      <span className="font-mono-num text-amber-300 font-semibold">
+                        {Math.round(settings.tiltSmoothing * 100)}%
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0.15}
+                      max={0.95}
+                      step={0.05}
+                      value={settings.tiltSmoothing}
+                      onChange={(e) =>
+                        onUpdateSettings({ tiltSmoothing: Number(e.target.value) })
+                      }
+                      className="accent-[#F59E0B] cursor-pointer"
+                    />
+                  </label>
+
+                  <div className="sm:col-span-2 flex items-center justify-between gap-4 pt-2 border-t border-[#FAF3E8]/10">
+                    <span className="text-xs font-medium text-[#E5D3BE]">
+                      Invert Left / Right Tilt
+                    </span>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={settings.tiltInvert}
+                      onClick={() => onUpdateSettings({ tiltInvert: !settings.tiltInvert })}
+                      className={`px-3 py-1 rounded-md text-xs font-semibold border transition-colors cursor-pointer ${
+                        settings.tiltInvert
+                          ? 'bg-[#D97706] border-[#F59E0B] text-[#1A0B07]'
+                          : 'bg-[#26140D] border-[#FAF3E8]/15 text-[#E5D3BE]/75 hover:text-white'
+                      }`}
+                    >
+                      {settings.tiltInvert ? 'Inverted' : 'Standard'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Controls Reference */}
             <div className="pt-2 border-t border-[#FAF3E8]/10">
               <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-200 mb-2.5">
@@ -346,12 +523,12 @@ export function SettingsModal({
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                 {[
-                  { action: 'Aim & Charge Toss', keys: 'Hold Left-Click or Space, Release' },
-                  { action: 'Hop Squares', keys: 'Click Tile, Space, W / S, or Arrows' },
-                  { action: 'Steer Balance', keys: 'A / D or Left / Right Arrows' },
-                  { action: 'Scoop River Stone', keys: 'E, Enter, Space, or Click' },
-                  { action: 'Switch Match Camera', keys: 'C Key or Quick Camera Bar' },
-                  { action: 'Orbit / View Dock', keys: 'Right-Drag Orbit · H Key View Bar' },
+                  { action: 'Aim & Charge Toss', keys: 'Hold Click / Space or Touch Pad' },
+                  { action: 'Hop Squares', keys: 'Click Tile, Space, W/S, or Tap Hop' },
+                  { action: 'Steer Aim / Balance', keys: 'A/D, Arrows, Stick, or Tilt' },
+                  { action: 'Scoop River Stone', keys: 'E, Enter, Space, Click, or Tap Scoop' },
+                  { action: 'Switch Match Camera', keys: 'C Key or Camera Button' },
+                  { action: 'Orbit / View Dock', keys: 'Right-Drag / 2-Finger · H Key' },
                 ].map((item) => (
                   <div
                     key={item.action}

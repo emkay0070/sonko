@@ -1156,15 +1156,19 @@ export function mountUgandanCompoundScene(
       prevPhase = camFocus.phase;
     }
 
-    // Reserve Left Mouse Button for aiming/hopping during local PLAYING turns; keep Right-drag orbit
+    // Reserve Left Mouse Button & 1-finger tap for aiming/hopping during local PLAYING turns; keep Right-drag & 2-finger orbit
     const lockOrbitLeft = curScreen === 'PLAYING' && !engine.isLocalInputLocked() && !worldEnvs.isArrivalPlaying();
     if (lockOrbitLeft) {
       controls.mouseButtons.LEFT = null as unknown as THREE.MOUSE;
       controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE;
+      controls.touches.ONE = null as unknown as THREE.TOUCH;
+      controls.touches.TWO = THREE.TOUCH.DOLLY_ROTATE;
       renderer.domElement.style.cursor = 'crosshair';
     } else {
       controls.mouseButtons.LEFT = THREE.MOUSE.ROTATE;
       controls.mouseButtons.RIGHT = THREE.MOUSE.PAN;
+      controls.touches.ONE = THREE.TOUCH.ROTATE;
+      controls.touches.TWO = THREE.TOUCH.DOLLY_ROTATE;
       renderer.domElement.style.cursor = 'grab';
     }
 

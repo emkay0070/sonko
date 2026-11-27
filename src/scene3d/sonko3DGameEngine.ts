@@ -639,6 +639,43 @@ export class Sonko3DGameEngine {
     this.balanceSway = Math.max(-1, Math.min(1, this.balanceSway + dir * 0.24));
   }
 
+  public nudgeAim(dir: -1 | 1) {
+    if (this.isLocalInputLocked()) return;
+    if (this.phase !== 'TOSS_AIM' && this.phase !== 'CLAIM_AIM') return;
+    this.aimAngleOffset = Math.max(-0.4, Math.min(0.4, this.aimAngleOffset + dir * 0.055));
+    if (this.mode === 'ONLINE_1V1') {
+      sonkoOnline.sendAim(this.aimAngleOffset, this.aimPower, this.isCharging);
+    }
+    this.pushHud(true);
+  }
+
+  public startTossCharge() {
+    if (this.isLocalInputLocked()) return;
+    if (this.phase !== 'TOSS_AIM' && this.phase !== 'CLAIM_AIM') return;
+    this.isCharging = true;
+    this.aimPower = 0.08;
+    this.aimChargeDir = 1;
+    this.chargeStartTime = performance.now();
+    this.pushHud(true);
+  }
+
+  public releaseTossCharge() {
+    if (this.isLocalInputLocked()) return;
+    if (this.isCharging && (this.phase === 'TOSS_AIM' || this.phase === 'CLAIM_AIM')) {
+      const heldMs = performance.now() - this.chargeStartTime;
+      if (heldMs < 110) {
+        this.isCharging = false;
+        this.aimPower = 0.12;
+        this.statusBanner = `Hold Toss button briefly, then release inside Square ${
+          this.players[this.activePlayerIndex]?.targetSquare ?? 1
+        }!`;
+        this.pushHud(true);
+        return;
+      }
+      this.launchStoneThrow(this.phase === 'CLAIM_AIM');
+    }
+  }
+
   public triggerAction() {
     if (this.isLocalInputLocked()) return;
     if (

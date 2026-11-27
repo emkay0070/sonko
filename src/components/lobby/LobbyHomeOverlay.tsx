@@ -117,7 +117,29 @@ export function LobbyHomeOverlay({
         </div>
 
         {/* Bottom Perimeter Dock: Match Launcher (Bottom-Left) + Daily Mission & Tour Anchor (Bottom-Right) */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 sm:gap-4 mt-auto">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-2.5 sm:gap-4 mt-auto">
+          {/* Compact Mobile Mission + Tour Strip (< md) */}
+          <div className="pointer-events-auto md:hidden flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-[#160B07]/92 border border-amber-400/25">
+            <button
+              type="button"
+              onClick={() => onNavigateTab('PLAY')}
+              className="flex items-center gap-2 min-w-0 text-left cursor-pointer"
+            >
+              <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" aria-hidden="true" />
+              <span className="text-[11px] font-semibold text-[#FAF3E8] truncate">
+                {dailyMission.completed ? 'Daily Mission Complete' : 'Daily Mission Active'}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={onOpenTour}
+              className="inline-flex items-center gap-1 text-[11px] font-mono-num font-semibold text-amber-300 shrink-0 cursor-pointer"
+            >
+              <Compass className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>Tour {venuesConquered}/4</span>
+            </button>
+          </div>
+
           {/* Bottom-Left Compact Match Launcher */}
           <div className="pointer-events-auto w-full md:w-[370px] flex flex-col gap-2">
             {/* Compact Mode Switcher */}

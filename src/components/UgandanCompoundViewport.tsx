@@ -71,7 +71,11 @@ export interface UgandanCompoundHandle {
   restartGame: () => void;
   returnToTitle: () => void;
   nudgeBalance: (dir: -1 | 1) => void;
+  nudgeAim: (dir: -1 | 1) => void;
+  startTossCharge: () => void;
+  releaseTossCharge: () => void;
   triggerAction: () => void;
+  toggleViewDock: () => void;
   setCameraPreset: (preset: CompoundCameraPreset) => void;
   setPose: (pose: CharacterViewportPose) => void;
   setSpeechState: (state: SpeechState) => void;
@@ -384,8 +388,20 @@ export const UgandanCompoundViewport = forwardRef<UgandanCompoundHandle, Ugandan
       nudgeBalance: (dir) => {
         controllerRef.current?.engine.nudgeBalance(dir);
       },
+      nudgeAim: (dir) => {
+        controllerRef.current?.engine.nudgeAim(dir);
+      },
+      startTossCharge: () => {
+        controllerRef.current?.engine.startTossCharge();
+      },
+      releaseTossCharge: () => {
+        controllerRef.current?.engine.releaseTossCharge();
+      },
       triggerAction: () => {
         controllerRef.current?.engine.triggerAction();
+      },
+      toggleViewDock: () => {
+        setDockCollapsed((prev) => !prev);
       },
       setCameraPreset: (preset) => {
         setCameraPreset(preset);
@@ -1439,13 +1455,13 @@ export const UgandanCompoundViewport = forwardRef<UgandanCompoundHandle, Ugandan
           slotsPanel={slotsPanelContent}
         />
 
-        {/* Collapsible Camera & Creator Studio Dock (hidden when collapsed on TITLE_MENU; accessible via WORLD tab or 'H') */}
+        {/* Collapsible Camera & Creator Studio Dock (toggled on TITLE_MENU via Controls button or 'H'; docked cleanly on PLAYING) */}
         {(screen === 'PLAYING' || !dockCollapsed) && (
           <div
             className={`pointer-events-none fixed z-30 flex flex-col items-end ${
               screen === 'PLAYING'
-                ? 'bottom-16 right-4 w-[min(860px,92vw)]'
-                : 'bottom-14 right-4 w-[min(920px,95vw)]'
+                ? 'top-16 right-3 lg:top-auto lg:bottom-16 lg:right-4 w-[min(860px,92vw)]'
+                : 'top-16 right-3 sm:right-6 w-[min(920px,94vw)]'
             }`}
           >
 
@@ -1465,7 +1481,7 @@ export const UgandanCompoundViewport = forwardRef<UgandanCompoundHandle, Ugandan
             </button>
 
           {!dockCollapsed && (
-            <div className="pointer-events-auto w-full mt-1.5 bg-[#1B100C]/94 border border-[#FAF3E8]/15 rounded-xl px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2.5">
+            <div className="pointer-events-auto w-full mt-1.5 max-h-[60vh] overflow-y-auto bg-[#1B100C]/95 border border-[#FAF3E8]/15 rounded-xl px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2.5 shadow-2xl">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#E5D3BE]/75">
                   <Camera className="w-3.5 h-3.5 text-amber-300" aria-hidden="true" />

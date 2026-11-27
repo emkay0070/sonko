@@ -9,3 +9,4 @@ coverage/
 dev-dist/
 .aistudio/
 .asset_backups_phase1/
+.playwright-cli/

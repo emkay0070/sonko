@@ -387,6 +387,23 @@ export const SonkoCanvas = forwardRef<SonkoCanvasHandle, SonkoCanvasProps>(
         teamTargets: [s.teamTargets[0], s.teamTargets[1]],
         phase: s.phase,
         balance: Math.round(s.balance),
+        balanceSway: Number(s.balanceSway.toFixed(3)),
+        isBalancingOneFoot:
+          s.screen === 'PLAYING' &&
+          s.playerStance !== 'TWO_FEET' &&
+          !s.hopAnimating &&
+          (s.phase === 'HOP_OUT' ||
+            s.phase === 'HOP_BACK' ||
+            s.phase === 'PICKUP_STONE' ||
+            s.phase === 'HOP_EXIT'),
+        hopNextStepLabel:
+          s.phase === 'PICKUP_STONE'
+            ? 'Scoop'
+            : s.phase === 'HOP_EXIT'
+              ? 'Leap'
+              : s.phase === 'HOP_OUT' || s.phase === 'HOP_BACK'
+                ? 'Hop'
+                : null,
         aimPower: s.aimPower,
         isCharging: s.isCharging,
         statusBanner: s.statusBanner,
