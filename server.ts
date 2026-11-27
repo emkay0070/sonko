@@ -2140,10 +2140,20 @@ async function startServer() {
   };
 
   app.get('/ads.txt', (_req: Request, res: Response) => {
-    const cfg = resolveAdsenseRuntimeConfig();
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=300');
-    res.send(renderAdsTxt(cfg));
+    const distAdsTxt = path.resolve(__dirname, 'dist', 'ads.txt');
+    const publicAdsTxt = path.resolve(__dirname, 'public', 'ads.txt');
+    if (fs.existsSync(distAdsTxt)) {
+      res.status(200).send(fs.readFileSync(distAdsTxt, 'utf8'));
+      return;
+    }
+    if (fs.existsSync(publicAdsTxt)) {
+      res.status(200).send(fs.readFileSync(publicAdsTxt, 'utf8'));
+      return;
+    }
+    const cfg = resolveAdsenseRuntimeConfig();
+    res.status(200).send(renderAdsTxt(cfg));
   });
 
   app.get('/robots.txt', (req: Request, res: Response) => {
@@ -2305,9 +2315,7 @@ async function startServer() {
         const rawHtml = fs.readFileSync(indexPath, 'utf8');
         const transformed = await vite.transformIndexHtml(req.originalUrl, rawHtml);
         const routeHtml = applyRouteSeoToHtml(transformed, '/404', origin);
-        const cfg = resolveAdsenseRuntimeConfig();
-        const finalHtml = injectAdsenseHeadIntoHtml(routeHtml, cfg);
-        res.status(404).setHeader('Content-Type', 'text/html; charset=utf-8').end(finalHtml);
+        res.status(404).setHeader('Content-Type', 'text/html; charset=utf-8').end(routeHtml);
       } catch (err) {
         next(err);
       }
@@ -2335,7 +2343,7 @@ async function startServer() {
         const origin = resolveSafeOrigin(req);
         const routeHtml = applyRouteSeoToHtml(rawHtml, route, origin);
         const cfg = resolveAdsenseRuntimeConfig();
-        const finalHtml = injectAdsenseHeadIntoHtml(routeHtml, cfg);
+        const finalHtml = isNotFound ? routeHtml : injectAdsenseHeadIntoHtml(routeHtml, cfg);
         res
           .status(isNotFound ? 404 : 200)
           .setHeader('Content-Type', 'text/html; charset=utf-8')

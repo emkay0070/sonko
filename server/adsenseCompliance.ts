@@ -33,9 +33,13 @@ export function escapeXml(input: string): string {
   return escapeHtml(input);
 }
 
+const DEFAULT_ADSENSE_CLIENT_ID = 'ca-pub-8832384771899504';
+
 export function resolveAdsenseRuntimeConfig(): AdsenseRuntimeConfig {
   const rawClient = String(
-    process.env.ADSENSE_CLIENT_ID || process.env.VITE_ADSENSE_CLIENT_ID || ''
+    process.env.ADSENSE_CLIENT_ID ||
+      process.env.VITE_ADSENSE_CLIENT_ID ||
+      DEFAULT_ADSENSE_CLIENT_ID
   ).trim();
   const isConfigured = ADSENSE_CLIENT_RE.test(rawClient);
   const clientId = isConfigured ? rawClient : '';

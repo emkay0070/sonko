@@ -488,6 +488,16 @@ export function applyRouteSeoToHtml(
     }
   }
 
+  // Ensure exact AdSense script appears once in <head> on ad-eligible routes, and never on /404
+  const adsenseScriptRe =
+    /\s*<script\b[^>]*\bsrc=["']https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js[^"']*["'][^>]*>\s*<\/script>/gi;
+  html = html.replace(adsenseScriptRe, '');
+  if (route !== '/404') {
+    const adsenseScriptTag =
+      '<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8832384771899504" crossorigin="anonymous"></script>';
+    html = html.replace('</head>', `    ${adsenseScriptTag}\n  </head>`);
+  }
+
   // Replace <div id="root">...</div> fallback markup with route-specific static HTML
   const rootMarkup = renderStaticRootMarkup(route);
   const rootRe = /<div id="root">[\s\S]*<\/div>(?=\s*(?:<script\b|<\/body>))/i;

@@ -33,7 +33,10 @@ export default defineConfig(() => {
           if (!/^ca-pub-\d{10,20}$/.test(clientId)) {
             return html;
           }
-          if (html.includes('name="google-adsense-account"')) {
+          if (
+            html.includes('name="google-adsense-account"') ||
+            html.includes('pagead2.googlesyndication.com/pagead/js/adsbygoogle.js')
+          ) {
             return html;
           }
           const testAttr =
