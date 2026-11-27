@@ -10,6 +10,7 @@ import { OutfitId, StencilId, StoneId } from '../game/types';
 
 interface CourtyardStallModalProps {
   progression: ProgressionData;
+  docked?: boolean;
   onClose: () => void;
   onOpenWardrobe?: () => void;
   onBuyOrEquipStone: (id: StoneId) => void;
@@ -42,6 +43,7 @@ export function CowrieIcon({ className = 'w-4 h-4' }: { className?: string }) {
 
 export function CourtyardStallModal({
   progression,
+  docked = false,
   onClose,
   onOpenWardrobe,
   onBuyOrEquipStone,
@@ -53,11 +55,21 @@ export function CourtyardStallModal({
   return (
     <div
       role="dialog"
-      aria-modal="true"
+      aria-modal={docked ? 'false' : 'true'}
       aria-label="Courtyard Stall"
-      className="fixed inset-0 z-40 flex items-center justify-center bg-black/75 p-4"
+      className={
+        docked
+          ? 'pointer-events-none fixed inset-0 z-40 flex items-end md:items-stretch justify-end p-2.5 sm:p-4 md:pt-16 md:pb-12'
+          : 'fixed inset-0 z-40 flex items-center justify-center bg-black/75 p-4'
+      }
     >
-      <div className="w-full max-w-3xl max-h-[88vh] flex flex-col bg-[#24120C] border border-[#FAF3E8]/20 rounded-xl overflow-hidden">
+      <div
+        className={
+          docked
+            ? 'pointer-events-auto w-full md:w-[min(520px,48vw)] max-h-[70vh] md:max-h-full flex flex-col bg-[#1E0F0A]/96 border border-[#FAF3E8]/20 rounded-xl shadow-2xl overflow-hidden'
+            : 'w-full max-w-3xl max-h-[88vh] flex flex-col bg-[#24120C] border border-[#FAF3E8]/20 rounded-xl overflow-hidden'
+        }
+      >
         {/* Header */}
         <div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-[#FAF3E8]/12">
           <div>
@@ -127,9 +139,9 @@ export function CourtyardStallModal({
         </div>
 
         {/* Items Grid */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div className="flex-1 overflow-y-auto px-5 py-4">
           {tab === 'STONES' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className={docked ? 'grid grid-cols-1 sm:grid-cols-2 gap-3.5' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'}>
               {STONE_CATALOG.map((item) => {
                 const unlocked = progression.unlockedStones.includes(item.id);
                 const equipped = progression.equippedStone === item.id;
@@ -249,7 +261,7 @@ export function CourtyardStallModal({
           )}
 
           {tab === 'OUTFITS' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className={docked ? 'grid grid-cols-1 sm:grid-cols-2 gap-3.5' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'}>
               {OUTFIT_CATALOG.map((item) => {
                 const unlocked = progression.unlockedOutfits.includes(item.id);
                 const equipped = progression.equippedOutfit === item.id;

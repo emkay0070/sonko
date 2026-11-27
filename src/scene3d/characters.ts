@@ -17,7 +17,7 @@ export const CHARACTER_SLOTS: ChildSpec[] = [
     height: 1.34,
     x: 0.25,
     z: 3.38,
-    lookTarget: [0.25, 0.35],
+    lookTarget: [1.18, 5.55],
     phase: 0.2,
   },
   {
@@ -26,7 +26,7 @@ export const CHARACTER_SLOTS: ChildSpec[] = [
     height: 1.31,
     x: -1.42,
     z: 1.82,
-    lookTarget: [0.25, 1.3],
+    lookTarget: [0.65, 4.15],
     phase: 1.4,
   },
   {
@@ -35,7 +35,7 @@ export const CHARACTER_SLOTS: ChildSpec[] = [
     height: 1.24,
     x: -1.68,
     z: -0.55,
-    lookTarget: [0.25, 0.8],
+    lookTarget: [0.45, 3.1],
     phase: 2.7,
   },
   {
@@ -44,7 +44,7 @@ export const CHARACTER_SLOTS: ChildSpec[] = [
     height: 1.38,
     x: 2.08,
     z: 2.35,
-    lookTarget: [0.25, 1.4],
+    lookTarget: [0.75, 4.6],
     phase: 3.9,
   },
 ];

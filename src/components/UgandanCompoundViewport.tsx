@@ -124,6 +124,7 @@ interface StoredModelEntry {
 }
 
 const CAMERA_OPTIONS: Array<{ id: CompoundCameraPreset; label: string }> = [
+  { id: 'lobby_home', label: 'Lobby Hero' },
   { id: 'play', label: 'Dynamic' },
   { id: 'aim_target', label: 'Aim Focus' },
   { id: 'top_aim', label: 'Top-Down' },
@@ -216,7 +217,7 @@ export const UgandanCompoundViewport = forwardRef<UgandanCompoundHandle, Ugandan
     previewPlaceRef.current = previewPlace;
 
     const [cameraPreset, setCameraPreset] = useState<CompoundCameraPreset>(
-      cameraPresetProp ?? 'characters'
+      cameraPresetProp ?? 'lobby_home'
     );
     const [daylight, setDaylight] = useState<DaylightPreset>(daylightProp ?? 'auto');
     const [weatherMode, setWeatherMode] = useState<WeatherMode>(weatherModeProp ?? 'auto');
@@ -315,7 +316,7 @@ export const UgandanCompoundViewport = forwardRef<UgandanCompoundHandle, Ugandan
         setDockCollapsed(true);
         setCameraPreset(cameraPresetProp ?? 'play');
       } else if (screen === 'TITLE_MENU') {
-        setCameraPreset('characters');
+        setCameraPreset(cameraPresetProp ?? 'lobby_home');
       }
     }, [screen, cameraPresetProp]);
 
@@ -1438,29 +1439,30 @@ export const UgandanCompoundViewport = forwardRef<UgandanCompoundHandle, Ugandan
           slotsPanel={slotsPanelContent}
         />
 
-        {/* Collapsible Camera & Creator Studio Dock */}
-        <div
-          className={`pointer-events-none fixed z-30 flex flex-col items-end ${
-            screen === 'PLAYING'
-              ? 'bottom-16 right-4 w-[min(860px,92vw)]'
-              : 'bottom-3 right-4 w-[min(920px,95vw)]'
-          }`}
-        >
-
-          <button
-            type="button"
-            onClick={() => setDockCollapsed((v) => !v)}
-            aria-expanded={!dockCollapsed}
-            className="pointer-events-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1B100C]/92 border border-[#FAF3E8]/15 text-[11px] font-medium text-[#E5D3BE]/85 hover:text-[#FAF3E8] cursor-pointer"
+        {/* Collapsible Camera & Creator Studio Dock (hidden when collapsed on TITLE_MENU; accessible via WORLD tab or 'H') */}
+        {(screen === 'PLAYING' || !dockCollapsed) && (
+          <div
+            className={`pointer-events-none fixed z-30 flex flex-col items-end ${
+              screen === 'PLAYING'
+                ? 'bottom-16 right-4 w-[min(860px,92vw)]'
+                : 'bottom-14 right-4 w-[min(920px,95vw)]'
+            }`}
           >
-            <Camera className="w-3.5 h-3.5 text-amber-300" aria-hidden="true" />
-            <span>{dockCollapsed ? 'Camera & View (H)' : 'Hide View Bar (H)'}</span>
-            {dockCollapsed ? (
-              <ChevronUp className="w-3.5 h-3.5" aria-hidden="true" />
-            ) : (
-              <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
-            )}
-          </button>
+
+            <button
+              type="button"
+              onClick={() => setDockCollapsed((v) => !v)}
+              aria-expanded={!dockCollapsed}
+              className="pointer-events-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1B100C]/92 border border-[#FAF3E8]/15 text-[11px] font-medium text-[#E5D3BE]/85 hover:text-[#FAF3E8] cursor-pointer"
+            >
+              <Camera className="w-3.5 h-3.5 text-amber-300" aria-hidden="true" />
+              <span>{dockCollapsed ? 'Camera & View (H)' : 'Hide View Bar (H)'}</span>
+              {dockCollapsed ? (
+                <ChevronUp className="w-3.5 h-3.5" aria-hidden="true" />
+              ) : (
+                <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
+              )}
+            </button>
 
           {!dockCollapsed && (
             <div className="pointer-events-auto w-full mt-1.5 bg-[#1B100C]/94 border border-[#FAF3E8]/15 rounded-xl px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2.5">
@@ -1590,7 +1592,8 @@ export const UgandanCompoundViewport = forwardRef<UgandanCompoundHandle, Ugandan
               </div>
             </div>
           )}
-        </div>
+          </div>
+        )}
       </div>
     );
   }

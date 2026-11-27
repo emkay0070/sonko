@@ -4,11 +4,9 @@ import {
   Check,
   Compass,
   Pause,
-  Play,
   PlayCircle,
   RotateCcw,
   Settings,
-  SlidersHorizontal,
   Volume2,
   VolumeX,
   ArrowLeft,
@@ -17,30 +15,26 @@ import {
   ShoppingBag,
   Wind,
   Globe,
-  Eye,
-  EyeOff,
-  Flame,
   Target,
   Trophy,
   CloudRain,
   CloudDrizzle,
   CloudFog,
   Sun,
-  Home,
 } from 'lucide-react';
-import { Link } from '../router';
 import { AchievementsModal, AchievementGlyph } from './AchievementsModal';
 import { AchievementToast } from './AchievementToast';
 import { AdSimulatorModal } from './AdSimulatorModal';
 import { CharacterCustomizerModal } from './CharacterCustomizerModal';
 import { ConsentBanner } from './ConsentBanner';
 import { CourtyardStallModal, CowrieIcon } from './CourtyardStallModal';
-import { DailyMissionCard } from './DailyMissionCard';
 import {
   DailyStreakModal,
   JustClaimedDailyInfo,
 } from './DailyStreakModal';
-import { GlobalLeaderboard } from './GlobalLeaderboard';
+import { LobbyHomeOverlay } from './lobby/LobbyHomeOverlay';
+import { LobbySectionDrawer } from './lobby/LobbySectionDrawer';
+import { LobbyTabId, LobbyTopBar } from './lobby/LobbyTopBar';
 import { OfflineIndicator } from './OfflineIndicator';
 import { OnlineLobbyModal } from './OnlineLobbyModal';
 import { PWAInstallButton } from './PWAInstallButton';
@@ -187,99 +181,10 @@ const INITIAL_HUD: HudSnapshot = {
   lastMatchReward: null,
 };
 
-function SonkoTitleLockup() {
-  return (
-    <svg
-      viewBox="0 0 380 112"
-      className="w-full max-w-[330px] h-auto select-none"
-      role="img"
-      aria-label="Sonko"
-    >
-      <g transform="translate(4, 14)">
-        <rect
-          x="2"
-          y="42"
-          width="36"
-          height="36"
-          rx="3"
-          fill="none"
-          stroke="#FAF3E8"
-          strokeWidth="2.5"
-          strokeOpacity="0.7"
-        />
-        <rect
-          x="2"
-          y="4"
-          width="18"
-          height="36"
-          rx="2"
-          fill="none"
-          stroke="#FBBF24"
-          strokeWidth="2.5"
-        />
-        <rect
-          x="20"
-          y="4"
-          width="18"
-          height="36"
-          rx="2"
-          fill="none"
-          stroke="#FAF3E8"
-          strokeWidth="2.5"
-          strokeOpacity="0.7"
-        />
-        <ellipse cx="11" cy="22" rx="6" ry="5" fill="#D6CFC7" stroke="#1F100B" strokeWidth="1.5" />
-        <circle cx="11" cy="22" r="2.2" fill="#F59E0B" />
-      </g>
-
-      <text
-        x="58"
-        y="76"
-        fontFamily="'Bricolage Grotesque', sans-serif"
-        fontWeight="800"
-        fontSize="74"
-        letterSpacing="-2"
-        fill="#2A1108"
-        transform="translate(3, 3)"
-      >
-        SONKO
-      </text>
-      <text
-        x="58"
-        y="76"
-        fontFamily="'Bricolage Grotesque', sans-serif"
-        fontWeight="800"
-        fontSize="74"
-        letterSpacing="-2"
-        fill="#FAF3E8"
-      >
-        SONKO
-      </text>
-
-      <path
-        d="M60 92 Q 190 86 346 93"
-        fill="none"
-        stroke="#F59E0B"
-        strokeWidth="4"
-        strokeLinecap="round"
-      />
-      <text
-        x="62"
-        y="108"
-        fontFamily="'Plus Jakarta Sans', sans-serif"
-        fontWeight="600"
-        fontSize="12.5"
-        letterSpacing="1.6"
-        fill="#FDE68A"
-      >
-        UGANDAN COURTYARD HOPSCOTCH · 3D
-      </text>
-    </svg>
-  );
-}
-
 const ALL_INSPECT_CAMERAS: Array<{ id: CompoundCameraPreset; label: string }> = [
-  { id: 'characters', label: 'Characters' },
+  { id: 'lobby_home', label: 'Hero Stage' },
+  { id: 'lobby_world', label: 'Wide Yard' },
+  { id: 'characters', label: 'Cast Lineup' },
   { id: 'courtyard', label: 'Courtyard' },
   { id: 'play', label: 'Dynamic' },
   { id: 'aim_target', label: 'Aim Focus' },
@@ -288,6 +193,21 @@ const ALL_INSPECT_CAMERAS: Array<{ id: CompoundCameraPreset; label: string }> = 
   { id: 'veranda', label: 'Veranda' },
   { id: 'overhead', label: 'Overhead' },
 ];
+
+function getCameraPresetForLobbyTab(tab: LobbyTabId): CompoundCameraPreset {
+  switch (tab) {
+    case 'PLAY':
+      return 'lobby_play';
+    case 'COMPETE':
+      return 'lobby_compete';
+    case 'WORLD':
+      return 'lobby_world';
+    case 'SOCIAL':
+    case 'HOME':
+    default:
+      return 'lobby_home';
+  }
+}
 
 export function SonkoGameExperience() {
   const compoundRef = useRef<UgandanCompoundHandle | null>(null);
@@ -304,9 +224,12 @@ export function SonkoGameExperience() {
   settingsRef.current = settings;
   const [muted, setMuted] = useState(false);
   const [titlePeekMode, setTitlePeekMode] = useState(false);
+  const [lobbyTab, setLobbyTab] = useState<LobbyTabId>('HOME');
+  const lobbyTabRef = useRef<LobbyTabId>('HOME');
+  lobbyTabRef.current = lobbyTab;
   const [characterPose, setCharacterPose] = useState<CharacterViewportPose>('idle');
   const [characterSpeech, setCharacterSpeech] = useState<SpeechState>('silent');
-  const [matchCamera, setMatchCamera] = useState<CompoundCameraPreset>('characters');
+  const [matchCamera, setMatchCamera] = useState<CompoundCameraPreset>('lobby_home');
   const [progression, setProgression] = useState<ProgressionData>(() => loadProgression());
   const progressionRef = useRef<ProgressionData>(progression);
   progressionRef.current = progression;
@@ -328,7 +251,6 @@ export function SonkoGameExperience() {
   const toastTimersRef = useRef<number[]>([]);
 
   // Online 1v1 & Global Leaderboard identity state
-  const [mainMenuTab, setMainMenuTab] = useState<'menu' | 'leaderboard'>('menu');
   const [leaderboardPlayerId] = useState<string>(() => getOrCreateLeaderboardPlayerId());
   const [onlineLobbyOpen, setOnlineLobbyOpen] = useState(false);
   const [onlineName, setOnlineName] = useState<string>(() => loadPlayerDisplayName());
@@ -542,7 +464,9 @@ export function SonkoGameExperience() {
             setDoubleMatchError(null);
             lastLiveMilestoneRef.current = '';
           } else if (snapshot.screen === 'TITLE_MENU') {
-            setMatchCamera('characters');
+            setLobbyTab('HOME');
+            setTitlePeekMode(false);
+            setMatchCamera('lobby_home');
             setLastMatchBadges([]);
             setLastMatchMission(null);
             setCurrentMatchId(null);
@@ -1060,12 +984,38 @@ export function SonkoGameExperience() {
     });
   }, []);
 
-  // Enter / Space on bare Title Screen opens Quick Match cleanly if no modal is open
+  const handleSelectLobbyTab = useCallback((nextTab: LobbyTabId) => {
+    setTitlePeekMode(false);
+    setLobbyTab(nextTab);
+    const nextCam = getCameraPresetForLobbyTab(nextTab);
+    setMatchCamera(nextCam);
+    compoundRef.current?.setCameraPreset(nextCam);
+  }, []);
+
+  const wasWardrobeInspectingRef = useRef(false);
+  useEffect(() => {
+    if (hud.screen !== 'TITLE_MENU') {
+      wasWardrobeInspectingRef.current = false;
+      return;
+    }
+    const inspectingWardrobe = customizerOpen || stallOpen;
+    if (inspectingWardrobe) {
+      wasWardrobeInspectingRef.current = true;
+      setMatchCamera('lobby_wardrobe');
+      compoundRef.current?.setCameraPreset('lobby_wardrobe');
+    } else if (wasWardrobeInspectingRef.current) {
+      wasWardrobeInspectingRef.current = false;
+      const returnCam = getCameraPresetForLobbyTab(lobbyTabRef.current);
+      setMatchCamera(returnCam);
+      compoundRef.current?.setCameraPreset(returnCam);
+    }
+  }, [hud.screen, customizerOpen, stallOpen]);
+
+  // Enter / Space on bare HOME Lobby opens Quick Match; Escape closes active Lobby section drawer
   useEffect(() => {
     const onTitleKey = (e: KeyboardEvent) => {
       if (
         hud.screen !== 'TITLE_MENU' ||
-        mainMenuTab !== 'menu' ||
         stallOpen ||
         customizerOpen ||
         onlineLobbyOpen ||
@@ -1073,9 +1023,26 @@ export function SonkoGameExperience() {
         tourOpen ||
         achievementsOpen ||
         dailyStreakOpen ||
-        settingsOpen ||
-        titlePeekMode
+        settingsOpen
       ) {
+        return;
+      }
+      if (e.key === 'Escape') {
+        if (titlePeekMode) {
+          e.preventDefault();
+          setTitlePeekMode(false);
+          const returnCam = getCameraPresetForLobbyTab(lobbyTabRef.current);
+          setMatchCamera(returnCam);
+          compoundRef.current?.setCameraPreset(returnCam);
+          return;
+        }
+        if (lobbyTab !== 'HOME') {
+          e.preventDefault();
+          handleSelectLobbyTab('HOME');
+          return;
+        }
+      }
+      if (lobbyTab !== 'HOME' || titlePeekMode) {
         return;
       }
       if (
@@ -1096,7 +1063,7 @@ export function SonkoGameExperience() {
     return () => window.removeEventListener('keydown', onTitleKey);
   }, [
     hud.screen,
-    mainMenuTab,
+    lobbyTab,
     stallOpen,
     customizerOpen,
     onlineLobbyOpen,
@@ -1106,6 +1073,7 @@ export function SonkoGameExperience() {
     dailyStreakOpen,
     settingsOpen,
     titlePeekMode,
+    handleSelectLobbyTab,
   ]);
 
   // Quick Match Camera Cycle shortcut ('C') during PLAYING
@@ -1157,18 +1125,9 @@ export function SonkoGameExperience() {
 
   const activeVenueSpec = getVenueSpec(hud.venue);
   const activePlaceSpec = getPlaceSpec(selectedPlace);
-  const venuesConquered = COURT_VENUES.filter((v) => (progression.tourWins[v.id] ?? 0) > 0).length;
   const achievementsUnlockedCount = ACHIEVEMENT_CATALOG.filter((a) =>
     Boolean(progression.unlockedAchievements?.[a.id])
   ).length;
-  const quickModeLabel =
-    selectedMode === 'SOLO'
-      ? 'Solo'
-      : selectedMode === 'TEAM_2V2'
-        ? '2v2'
-        : selectedMode === 'TWO_PLAYER'
-          ? '2P Local'
-          : 'VS Bot';
 
   const activeViewportPose: CharacterViewportPose =
     hud.screen === 'TITLE_MENU'
@@ -1246,348 +1205,43 @@ export function SonkoGameExperience() {
         onMatchComplete={handleMatchComplete}
       />
 
-      {/* GAME HOME HUB OVERLAY ON TOP OF LIVE 3D COURTYARD */}
+      {/* EQUATORIAL STAGE 3D GAME LOBBY (HOME · PLAY · COMPETE · WORLD · SOCIAL) */}
       {hud.screen === 'TITLE_MENU' && (
         <section
-          aria-label="Sonko Game Home Hub"
-          className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between overflow-y-auto"
+          aria-label="Sonko Game Lobby"
+          className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between overflow-hidden"
         >
-          {/* Left-weighted warm gradient scrim so 3D characters & courtyard breathe on the right */}
-          {!titlePeekMode && (
-            <div
-              className="pointer-events-none fixed inset-0 -z-10"
-              style={{
-                background:
-                  'linear-gradient(90deg, rgba(22,10,6,0.90) 0%, rgba(26,12,7,0.72) 34%, rgba(26,12,7,0.18) 62%, rgba(26,12,7,0.04) 100%)',
-              }}
-            />
-          )}
+          <LobbyTopBar
+            activeTab={lobbyTab}
+            onSelectTab={handleSelectLobbyTab}
+            playerName={onlineName}
+            cowries={progression.cowries}
+            streakDays={progression.dailyStreak.currentStreak}
+            muted={muted}
+            titlePeekMode={titlePeekMode}
+            onToggleMute={toggleMute}
+            onTogglePeekMode={() => {
+              setTitlePeekMode((prev) => {
+                const next = !prev;
+                if (!next) {
+                  const returnCam = getCameraPresetForLobbyTab(lobbyTab);
+                  setMatchCamera(returnCam);
+                  compoundRef.current?.setCameraPreset(returnCam);
+                }
+                return next;
+              });
+            }}
+            onOpenStall={() => setStallOpen(true)}
+            onOpenStreak={() => {
+              setJustClaimedDaily(null);
+              setDailyStreakOpen(true);
+            }}
+            onOpenSettings={() => setSettingsOpen(true)}
+          />
 
-          {/* Top Bar: Home Link, Daily Streak, Sound, Install, Inspect 3D Yard */}
-          <div className="px-5 sm:px-10 pt-4 flex items-center justify-between gap-2 flex-wrap">
-            <Link
-              to="/"
-              className="pointer-events-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1A0B07]/90 hover:bg-[#2E160E] border border-[#FAF3E8]/20 text-xs font-medium text-[#E5D3BE] hover:text-white cursor-pointer whitespace-nowrap"
-            >
-              <Home className="w-3.5 h-3.5 text-amber-300" aria-hidden="true" />
-              <span>Website Home</span>
-            </Link>
-
-            <div className="flex items-center justify-end gap-2 flex-wrap">
-            <button
-              type="button"
-              onClick={() => {
-                setJustClaimedDaily(null);
-                setDailyStreakOpen(true);
-              }}
-              aria-label={`Daily login streak: ${progression.dailyStreak.currentStreak} ${
-                progression.dailyStreak.currentStreak === 1 ? 'day' : 'days'
-              }. Open reward calendar`}
-              className="pointer-events-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#2D170F]/95 hover:bg-[#3B1E14] border border-amber-400/45 text-xs font-semibold text-amber-200 hover:text-amber-100 cursor-pointer"
-            >
-              <Flame className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />
-              <span className="font-mono-num">
-                {progression.dailyStreak.currentStreak}{' '}
-                {progression.dailyStreak.currentStreak === 1 ? 'Day Streak' : 'Days Streak'}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={toggleMute}
-              aria-label={muted ? 'Unmute audio' : 'Mute audio'}
-              className="pointer-events-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1A0B07]/90 hover:bg-[#2E160E] border border-[#FAF3E8]/20 text-xs font-medium text-[#E5D3BE] hover:text-white cursor-pointer"
-            >
-              {muted ? (
-                <VolumeX className="w-3.5 h-3.5 text-amber-300" aria-hidden="true" />
-              ) : (
-                <Volume2 className="w-3.5 h-3.5 text-amber-300" aria-hidden="true" />
-              )}
-              <span>{muted ? 'Muted' : 'Audio'}</span>
-            </button>
-
-            <div className="pointer-events-auto">
-              <PWAInstallButton variant="title" />
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setTitlePeekMode((v) => !v)}
-              className="pointer-events-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1A0B07]/90 hover:bg-[#2E160E] border border-[#FAF3E8]/20 text-xs font-medium text-[#E5D3BE] hover:text-white cursor-pointer"
-            >
-              {titlePeekMode ? (
-                <>
-                  <Eye className="w-3.5 h-3.5 text-amber-300" aria-hidden="true" />
-                  <span>Show Menu</span>
-                </>
-              ) : (
-                <>
-                  <EyeOff className="w-3.5 h-3.5 text-amber-300" aria-hidden="true" />
-                  <span>Inspect 3D Yard</span>
-                </>
-              )}
-            </button>
-            </div>
-          </div>
-
-          {!titlePeekMode ? (
-            <div className="flex-1 flex items-center px-5 sm:px-10 lg:px-14 py-4">
-              <div className="pointer-events-auto w-full max-w-lg flex flex-col items-start gap-4">
-                <SonkoTitleLockup />
-
-                {/* Main Menu View Toggle: Courtyard Menu vs Global Top 10 */}
-                <div
-                  role="tablist"
-                  aria-label="Main Menu Section"
-                  className="inline-grid grid-cols-2 gap-1 p-1 rounded-xl bg-[#180A06]/92 border border-[#FAF3E8]/18"
-                >
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={mainMenuTab === 'menu'}
-                    onClick={() => setMainMenuTab('menu')}
-                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
-                      mainMenuTab === 'menu'
-                        ? 'bg-[#F59E0B] text-[#1A0B07]'
-                        : 'text-[#E5D3BE]/85 hover:text-white hover:bg-white/5'
-                    }`}
-                  >
-                    Courtyard Menu
-                  </button>
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={mainMenuTab === 'leaderboard'}
-                    onClick={() => setMainMenuTab('leaderboard')}
-                    className={`inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
-                      mainMenuTab === 'leaderboard'
-                        ? 'bg-[#F59E0B] text-[#1A0B07]'
-                        : 'text-[#E5D3BE]/85 hover:text-white hover:bg-white/5'
-                    }`}
-                  >
-                    <Globe className="w-3.5 h-3.5" aria-hidden="true" />
-                    <span>Global Leaderboard</span>
-                  </button>
-                </div>
-
-                {mainMenuTab === 'leaderboard' ? (
-                  <GlobalLeaderboard
-                    playerId={leaderboardPlayerId}
-                    playerName={onlineName}
-                    onPlayerNameChange={handlePlayerNameChange}
-                    bestScore={progression.stats.bestScore}
-                    totalWins={progression.stats.matchesWon}
-                    totalBullseyes={progression.stats.totalBullseyes}
-                    totalHouses={progression.stats.totalHouses}
-                    preferredVenue={selectedVenue}
-                    preferredMode={selectedMode}
-                    onPlayNow={() => {
-                      setMainMenuTab('menu');
-                      setQuickMatchOpen(true);
-                    }}
-                  />
-                ) : (
-                  <>
-                    <p className="text-sm leading-relaxed text-[#F3E6D6]/90 max-w-md">
-                      Toss your river stone cleanly, hop across the sunlit compound on one foot,
-                      scoop on return, and claim your House.
-                    </p>
-
-                    {/* Main Game Home Menu Cards */}
-                    <nav
-                      aria-label="Main Navigation"
-                      className="w-full grid grid-cols-1 sm:grid-cols-2 gap-2.5"
-                    >
-                      {/* 1. Quick Match */}
-                      <button
-                        id="home-quick-match-btn"
-                        type="button"
-                        onClick={() => setQuickMatchOpen(true)}
-                        className="group text-left p-4 rounded-xl bg-[#D97706] hover:bg-[#EA8A1A] active:translate-y-px border border-[#FBBF24] text-[#1A0B07] transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300 flex items-start gap-3 shadow-lg"
-                      >
-                        <div className="w-9 h-9 rounded-lg bg-[#1A0B07]/15 flex items-center justify-center shrink-0 mt-0.5">
-                          <Play className="w-5 h-5 fill-current" aria-hidden="true" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="font-display font-extrabold text-base leading-tight">
-                            Quick Match
-                          </div>
-                          <div className="text-xs font-semibold text-[#1A0B07]/80 truncate mt-1">
-                            {quickModeLabel} · {activePlaceSpec.name}
-                          </div>
-                        </div>
-                      </button>
-
-                      {/* 2. Story / Uganda Tour */}
-                      <button
-                        type="button"
-                        onClick={() => setTourOpen(true)}
-                        className="group text-left p-4 rounded-xl bg-[#1C0D08]/92 hover:bg-[#2E160E] border border-amber-400/35 hover:border-amber-400/70 text-[#FAF3E8] transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-amber-400 flex items-start gap-3"
-                      >
-                        <div className="w-9 h-9 rounded-lg bg-amber-400/15 border border-amber-400/25 flex items-center justify-center shrink-0 mt-0.5">
-                          <Compass className="w-5 h-5 text-amber-300" aria-hidden="true" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="font-display font-bold text-base leading-tight">
-                            Story / Uganda Tour
-                          </div>
-                          <div className="text-xs text-[#E5D3BE]/75 truncate mt-1">
-                            Tour Stamps {venuesConquered}/4 · 4 Stops
-                          </div>
-                        </div>
-                      </button>
-
-                      {/* 3. Online 1v1 */}
-                      <button
-                        type="button"
-                        onClick={handleOpenOnlineLobby}
-                        className="group text-left p-4 rounded-xl bg-[#1C0D08]/92 hover:bg-[#2E160E] border border-[#FAF3E8]/15 hover:border-amber-400/50 text-[#FAF3E8] transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-amber-400 flex items-start gap-3"
-                      >
-                        <div className="w-9 h-9 rounded-lg bg-[#2D170F] border border-[#FAF3E8]/12 flex items-center justify-center shrink-0 mt-0.5">
-                          <Globe className="w-5 h-5 text-amber-300" aria-hidden="true" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="font-display font-bold text-base leading-tight">
-                            Online 1v1
-                          </div>
-                          <div className="text-xs text-[#E5D3BE]/75 truncate mt-1">
-                            {isOnline ? 'Room codes & live duels' : 'Offline — reconnect to play'}
-                          </div>
-                        </div>
-                      </button>
-
-                      {/* 4. Wardrobe & Courtyard Stall */}
-                      <button
-                        type="button"
-                        onClick={() => setStallOpen(true)}
-                        className="group text-left p-4 rounded-xl bg-[#1C0D08]/92 hover:bg-[#2E160E] border border-[#FAF3E8]/15 hover:border-amber-400/50 text-[#FAF3E8] transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-amber-400 flex items-start gap-3"
-                      >
-                        <div className="w-9 h-9 rounded-lg bg-[#2D170F] border border-[#FAF3E8]/12 flex items-center justify-center shrink-0 mt-0.5">
-                          <ShoppingBag className="w-5 h-5 text-amber-300" aria-hidden="true" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="font-display font-bold text-base leading-tight">
-                            Wardrobe &amp; Stall
-                          </div>
-                          <div className="text-xs text-amber-200/90 font-mono-num truncate mt-1">
-                            {progression.cowries} Cowries · Gear &amp; Hair
-                          </div>
-                        </div>
-                      </button>
-
-                      {/* 5. Achievements */}
-                      <button
-                        type="button"
-                        onClick={() => setAchievementsOpen(true)}
-                        className="group text-left p-4 rounded-xl bg-[#1C0D08]/92 hover:bg-[#2E160E] border border-amber-400/25 hover:border-amber-400/60 text-[#FAF3E8] transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-amber-400 flex items-start gap-3"
-                      >
-                        <div className="w-9 h-9 rounded-lg bg-amber-400/15 border border-amber-400/25 flex items-center justify-center shrink-0 mt-0.5">
-                          <Trophy className="w-5 h-5 text-amber-300" aria-hidden="true" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="font-display font-bold text-base leading-tight">
-                            Achievements
-                          </div>
-                          <div className="text-xs text-amber-200/85 font-mono-num truncate mt-1">
-                            {achievementsUnlockedCount}/{ACHIEVEMENT_CATALOG.length} Badges · Cowrie
-                            Rewards
-                          </div>
-                        </div>
-                      </button>
-
-                      {/* 6. Settings */}
-                      <button
-                        type="button"
-                        onClick={() => setSettingsOpen(true)}
-                        className="group text-left p-4 rounded-xl bg-[#1C0D08]/92 hover:bg-[#2E160E] border border-[#FAF3E8]/15 hover:border-amber-400/50 text-[#FAF3E8] transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-amber-400 flex items-start gap-3"
-                      >
-                        <div className="w-9 h-9 rounded-lg bg-[#2D170F] border border-[#FAF3E8]/12 flex items-center justify-center shrink-0 mt-0.5">
-                          <Settings className="w-5 h-5 text-amber-300" aria-hidden="true" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="font-display font-bold text-base leading-tight">
-                            Settings
-                          </div>
-                          <div className="text-xs text-[#E5D3BE]/75 truncate mt-1 capitalize">
-                            {settings.graphicsQuality} Quality · Audio &amp; Camera
-                          </div>
-                        </div>
-                      </button>
-
-                      {/* 7. Creator Studio (only visible when unlocked / dev mode enabled) */}
-                      {studioAvailable && (
-                        <button
-                          type="button"
-                          onClick={() => compoundRef.current?.openCreatorStudio()}
-                          className="group text-left p-4 rounded-xl bg-[#1C0D08]/92 hover:bg-[#2E160E] border border-amber-400/30 hover:border-amber-400/70 text-[#FAF3E8] transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-amber-400 flex items-start gap-3"
-                        >
-                          <div className="w-9 h-9 rounded-lg bg-amber-400/15 border border-amber-400/25 flex items-center justify-center shrink-0 mt-0.5">
-                            <SlidersHorizontal className="w-5 h-5 text-amber-300" aria-hidden="true" />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="font-display font-bold text-base leading-tight">
-                              Creator Studio
-                            </div>
-                            <div className="text-xs text-[#E5D3BE]/75 truncate mt-1">
-                              Models, Surfaces &amp; Voices
-                            </div>
-                          </div>
-                        </button>
-                      )}
-                    </nav>
-
-                    {/* Active Daily Mission Card */}
-                    <DailyMissionCard
-                      missionState={progression.dailyMission}
-                      onStartMission={() => setQuickMatchOpen(true)}
-                      onRerollMission={handleRerollDailyMission}
-                      rerollAvailable={missionRerollAvailable}
-                      rerollLoading={rerollLoading}
-                      rerollMessage={rerollMessage}
-                    />
-
-                    {/* Cowries & Career Stats Line */}
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#E5D3BE]/85 font-mono-num">
-                      <span className="inline-flex items-center gap-1.5 text-amber-200 font-semibold">
-                        <CowrieIcon className="w-4 h-4" />
-                        <span>{progression.cowries} Cowries</span>
-                      </span>
-                      <span aria-hidden="true" className="text-[#FAF3E8]/30">
-                        ·
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setJustClaimedDaily(null);
-                          setDailyStreakOpen(true);
-                        }}
-                        className="inline-flex items-center gap-1 text-amber-300 hover:text-amber-200 font-semibold cursor-pointer"
-                      >
-                        <Flame className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />
-                        <span>{progression.dailyStreak.currentStreak}d Streak</span>
-                      </button>
-                      <span aria-hidden="true" className="text-[#FAF3E8]/30">
-                        ·
-                      </span>
-                      <span>
-                        Wins {progression.stats.matchesWon}/{progression.stats.matchesPlayed}
-                      </span>
-                      <span aria-hidden="true" className="text-[#FAF3E8]/30">
-                        ·
-                      </span>
-                      <span>Best {progression.stats.bestScore} pts</span>
-                      <span aria-hidden="true" className="text-[#FAF3E8]/30">
-                        ·
-                      </span>
-                      <span>{selectedCourtSize} Squares</span>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          ) : (
-            /* Inspect 3D Yard Mode: keep ALL 8 cameras + all 5 World Places immediately accessible */
-            <div className="flex-1 flex flex-col items-center justify-end gap-2 px-4 pb-16 pointer-events-none">
+          {titlePeekMode ? (
+            /* Inspect Full 3D Yard Mode: unobstructed view with quick World & Camera selector bars */
+            <div className="flex-1 flex flex-col items-center justify-end gap-2 px-4 pb-16 md:pb-6 pointer-events-none">
               <div
                 role="group"
                 aria-label="Inspect 3D world places"
@@ -1641,44 +1295,100 @@ export function SonkoGameExperience() {
                 ))}
               </div>
             </div>
+          ) : lobbyTab === 'HOME' ? (
+            <LobbyHomeOverlay
+              activePlaceSpec={activePlaceSpec}
+              weatherLabel={hud.weatherLabel}
+              selectedMode={selectedMode}
+              onSelectMode={setSelectedMode}
+              selectedCourtSize={selectedCourtSize}
+              progression={progression}
+              dailyMission={progression.dailyMission}
+              missionRerollAvailable={missionRerollAvailable}
+              rerollLoading={rerollLoading}
+              rerollMessage={rerollMessage}
+              onRerollDailyMission={handleRerollDailyMission}
+              isOnline={isOnline}
+              onPlayMatch={handleStartQuickMatch}
+              onOpenQuickMatchSetup={() => setQuickMatchOpen(true)}
+              onOpenWardrobe={() => setCustomizerOpen(true)}
+              onOpenOnlineLobby={handleOpenOnlineLobby}
+              onOpenTour={() => setTourOpen(true)}
+              onNavigateTab={handleSelectLobbyTab}
+            />
+          ) : (
+            <LobbySectionDrawer
+              activeTab={lobbyTab}
+              onClose={() => handleSelectLobbyTab('HOME')}
+              selectedMode={selectedMode}
+              onSelectMode={setSelectedMode}
+              selectedDifficulty={selectedDifficulty}
+              onSelectDifficulty={setSelectedDifficulty}
+              selectedCourtSize={selectedCourtSize}
+              onSelectCourtSize={setSelectedCourtSize}
+              selectedPlace={selectedPlace}
+              onSelectPlace={handleSelectPlace}
+              selectedPeriod={selectedPeriod}
+              onSelectPeriod={setSelectedPeriod}
+              selectedWeatherMode={selectedWeatherMode}
+              onSelectWeatherMode={setSelectedWeatherMode}
+              cameraPreset={matchCamera}
+              onSelectCamera={(cam) => {
+                setMatchCamera(cam);
+                compoundRef.current?.setCameraPreset(cam);
+              }}
+              characterPose={characterPose}
+              onSelectPose={(nextPose) => {
+                setCharacterPose(nextPose);
+                compoundRef.current?.setPose(nextPose);
+              }}
+              characterSpeech={characterSpeech}
+              onSelectSpeech={(nextSpeech) => {
+                setCharacterSpeech(nextSpeech);
+                compoundRef.current?.setSpeechState(nextSpeech);
+              }}
+              studioAvailable={studioAvailable}
+              onOpenStudio={() => compoundRef.current?.openCreatorStudio()}
+              onInspectFullYard={() => setTitlePeekMode(true)}
+              progression={progression}
+              leaderboardPlayerId={leaderboardPlayerId}
+              playerName={onlineName}
+              onPlayerNameChange={handlePlayerNameChange}
+              isOnline={isOnline}
+              onStartMatch={handleStartQuickMatch}
+              onStartQuickMode={(mode) => {
+                setSelectedMode(mode);
+                setTitlePeekMode(false);
+                const cam = settingsRef.current.defaultCamera;
+                setMatchCamera(cam);
+                compoundRef.current?.startGame(
+                  mode,
+                  selectedDifficulty,
+                  selectedCourtSize,
+                  selectedVenue
+                );
+                compoundRef.current?.setCameraPreset(cam);
+              }}
+              onOpenQuickMatchSetup={() => setQuickMatchOpen(true)}
+              onOpenTour={() => setTourOpen(true)}
+              onOpenOnlineLobby={handleOpenOnlineLobby}
+              onJoinOnlineInvite={(code) => {
+                setSelectedMode('ONLINE_1V1');
+                setInviteJoinCode(code);
+                if (isOnline) {
+                  sonkoOnline.connect();
+                }
+                setOnlineLobbyOpen(true);
+              }}
+              onOpenAchievements={() => setAchievementsOpen(true)}
+              onOpenWardrobe={() => setCustomizerOpen(true)}
+              onOpenStall={() => setStallOpen(true)}
+              missionRerollAvailable={missionRerollAvailable}
+              rerollLoading={rerollLoading}
+              rerollMessage={rerollMessage}
+              onRerollDailyMission={handleRerollDailyMission}
+            />
           )}
-
-          {/* Bottom Control Hint & Policy Navigation Line */}
-          <footer className="px-5 sm:px-10 lg:px-14 pb-4 pt-2 pointer-events-auto">
-            <div className="max-w-4xl border-t border-[#FAF3E8]/15 pt-2.5 text-xs text-[#E5D3BE]/80 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span>Hold Click or Space to Toss</span>
-                <span aria-hidden="true">·</span>
-                <span>Click Tile or Space to Hop</span>
-                <span aria-hidden="true">·</span>
-                <span>A / D Steer Balance</span>
-                <span aria-hidden="true">·</span>
-                <span>Right-Drag Orbit</span>
-                <span aria-hidden="true">·</span>
-                <span>H View Bar</span>
-              </div>
-              <nav
-                aria-label="Game guide and legal pages"
-                className="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-[11px]"
-              >
-                <Link to="/how-to-play" className="text-amber-300/90 hover:text-amber-200 underline underline-offset-2">
-                  How to Play
-                </Link>
-                <Link to="/about" className="text-amber-300/90 hover:text-amber-200 underline underline-offset-2">
-                  About
-                </Link>
-                <Link to="/privacy" className="text-amber-300/90 hover:text-amber-200 underline underline-offset-2">
-                  Privacy Policy
-                </Link>
-                <Link to="/terms" className="text-amber-300/90 hover:text-amber-200 underline underline-offset-2">
-                  Terms
-                </Link>
-                <Link to="/contact" className="text-amber-300/90 hover:text-amber-200 underline underline-offset-2">
-                  Contact
-                </Link>
-              </nav>
-            </div>
-          </footer>
         </section>
       )}
 
@@ -2375,10 +2085,11 @@ export function SonkoGameExperience() {
         />
       )}
 
-      {/* COURTYARD STALL MODAL */}
+      {/* COURTYARD STALL MODAL (Docked live 3D side drawer on Lobby) */}
       {stallOpen && (
         <CourtyardStallModal
           progression={progression}
+          docked={hud.screen === 'TITLE_MENU'}
           onClose={() => setStallOpen(false)}
           onOpenWardrobe={() => {
             setStallOpen(false);
@@ -2390,10 +2101,11 @@ export function SonkoGameExperience() {
         />
       )}
 
-      {/* CHARACTER CUSTOMIZER MODAL */}
+      {/* CHARACTER CUSTOMIZER MODAL (Docked live 3D side drawer on Lobby) */}
       {customizerOpen && (
         <CharacterCustomizerModal
           progression={progression}
+          docked={hud.screen === 'TITLE_MENU'}
           onUpdateAvatar={handleUpdateAvatar}
           onOpenStall={() => {
             setCustomizerOpen(false);

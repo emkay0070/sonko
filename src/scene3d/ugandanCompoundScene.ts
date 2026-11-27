@@ -57,6 +57,11 @@ import { buildUgandanVegetation } from './vegetation';
 import { buildWorldEnvironments } from './worldEnvironments';
 
 export type CompoundCameraPreset =
+  | 'lobby_home'
+  | 'lobby_wardrobe'
+  | 'lobby_world'
+  | 'lobby_play'
+  | 'lobby_compete'
   | 'play'
   | 'aim_target'
   | 'top_aim'
@@ -90,6 +95,26 @@ interface CameraWaypoint {
 }
 
 const CAMERA_PRESETS: Record<CompoundCameraPreset, CameraWaypoint> = {
+  lobby_home: {
+    pos: [1.85, 1.32, 5.6],
+    lookAt: [-0.08, 0.88, 2.2],
+  },
+  lobby_wardrobe: {
+    pos: [1.12, 1.18, 4.92],
+    lookAt: [0.68, 0.86, 3.38],
+  },
+  lobby_world: {
+    pos: [4.85, 2.65, 7.25],
+    lookAt: [0.55, 0.85, -0.35],
+  },
+  lobby_play: {
+    pos: [2.45, 1.72, 5.95],
+    lookAt: [0.65, 0.68, 1.45],
+  },
+  lobby_compete: {
+    pos: [2.6, 1.55, 5.75],
+    lookAt: [0.52, 0.78, 1.65],
+  },
   play: {
     pos: [0.32, 3.05, 6.25],
     lookAt: [0.25, 0.35, 0.25],
@@ -124,7 +149,7 @@ const CAMERA_PRESETS: Record<CompoundCameraPreset, CameraWaypoint> = {
   },
 };
 
-type AtmosphereKey = 'morning' | 'midday' | 'golden' | 'overcast' | 'night' | 'lakeside';
+type AtmosphereKey = 'morning' | 'midday' | 'afternoon' | 'golden' | 'overcast' | 'night' | 'lakeside';
 
 interface AtmosphereConfig {
   elevationDeg: number;
@@ -178,6 +203,23 @@ const ATMOSPHERE_CONFIGS: Record<AtmosphereKey, AtmosphereConfig> = {
     turbidity: 3.4,
     rayleigh: 1.25,
     envIntensity: 0.48,
+  },
+  afternoon: {
+    elevationDeg: 25,
+    azimuthDeg: 215,
+    sunColor: '#ffdfb0',
+    sunIntensity: 3.15,
+    skyColor: '#7eb6e6',
+    groundBounce: '#8d482d',
+    hemiIntensity: 1.0,
+    fillIntensity: 0.46,
+    fillColor: '#b7d4ee',
+    fogColor: '#d9c5ae',
+    fogDensity: 0.0072,
+    exposure: 1.03,
+    turbidity: 4.8,
+    rayleigh: 1.75,
+    envIntensity: 0.52,
   },
   golden: {
     elevationDeg: 14,
@@ -389,10 +431,10 @@ export function mountUgandanCompoundScene(
   const scene = new THREE.Scene();
 
   const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 520);
-  camera.position.set(...CAMERA_PRESETS.characters.pos);
+  camera.position.set(...CAMERA_PRESETS.lobby_home.pos);
 
   const controls = new OrbitControls(camera, renderer.domElement);
-  controls.target.set(...CAMERA_PRESETS.characters.lookAt);
+  controls.target.set(...CAMERA_PRESETS.lobby_home.lookAt);
   controls.enableDamping = !isSoftwareGl;
   controls.dampingFactor = 0.06;
   controls.maxPolarAngle = Math.PI * 0.485;
@@ -417,23 +459,24 @@ export function mountUgandanCompoundScene(
   skyUniforms['mieDirectionalG'].value = 0.82;
 
   const fog = new THREE.FogExp2(
-    ATMOSPHERE_CONFIGS.midday.fogColor,
-    ATMOSPHERE_CONFIGS.midday.fogDensity
+    ATMOSPHERE_CONFIGS.afternoon.fogColor,
+    ATMOSPHERE_CONFIGS.afternoon.fogDensity
   );
   scene.fog = fog;
 
-  // 3-Point Natural African Daylight Rig (tight 1024x1024 court/compound shadow map for 4x faster fill)
+  // 3-Point Natural African Daylight Rig (2048x2048 crisp shadow map on hardware GPU)
   const sunLight = new THREE.DirectionalLight('#fff5e4', 3.25);
   sunLight.castShadow = !isSoftwareGl && shadowsEnabledSetting;
-  sunLight.shadow.mapSize.set(1024, 1024);
+  sunLight.shadow.mapSize.set(isSoftwareGl ? 1024 : 2048, isSoftwareGl ? 1024 : 2048);
   sunLight.shadow.camera.near = 2;
   sunLight.shadow.camera.far = 45;
   sunLight.shadow.camera.left = -11;
   sunLight.shadow.camera.right = 11;
   sunLight.shadow.camera.top = 11;
   sunLight.shadow.camera.bottom = -11;
-  sunLight.shadow.bias = -0.00045;
-  sunLight.shadow.normalBias = 0.022;
+  sunLight.shadow.bias = -0.00035;
+  sunLight.shadow.normalBias = 0.018;
+  sunLight.shadow.radius = 2.5;
   scene.add(sunLight);
   scene.add(sunLight.target);
 
@@ -705,13 +748,16 @@ export function mountUgandanCompoundScene(
     const venue = engine.getActiveVenue();
     const isEntebbe = venue === 'entebbe_sand' || currentWorldPlace === 'entebbe_lakeside';
     const isSchoolyard = currentWorldPlace === 'primary_schoolyard';
-    const key =
+    const isLobby = engine.getScreen() === 'TITLE_MENU';
+    const key: AtmosphereKey =
       daylightOverride === 'auto'
         ? isEntebbe
           ? 'lakeside'
-          : isSchoolyard
-            ? 'morning'
-            : venueToAtmosphere(venue)
+          : isLobby && (venue === 'kampala_murram' || isSchoolyard)
+            ? 'afternoon'
+            : isSchoolyard
+              ? 'morning'
+              : venueToAtmosphere(venue)
         : daylightOverride;
     applyAtmosphere(key);
   };
@@ -758,7 +804,7 @@ export function mountUgandanCompoundScene(
   }
 
   // Camera Preset & Interactive Gameplay Tracking
-  let activePreset: CompoundCameraPreset = 'characters';
+  let activePreset: CompoundCameraPreset = 'lobby_home';
   let transitioningCamera = false;
   let userManualOrbit = false;
   let prevScreen = engine.getScreen();
@@ -1082,7 +1128,7 @@ export function mountUgandanCompoundScene(
         }
       } else if (curScreen === 'TITLE_MENU') {
         skipArrivalSequence();
-        setCameraPreset('characters');
+        setCameraPreset('lobby_home');
       } else if (curScreen === 'GAME_OVER') {
         skipArrivalSequence();
         userManualOrbit = false;

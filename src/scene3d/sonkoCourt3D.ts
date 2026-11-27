@@ -168,21 +168,41 @@ export class SonkoCourt3D {
       t.anisotropy = Math.min(16, Math.max(1, maxAnisotropy));
       t.needsUpdate = true;
     });
-    const padGeo = new THREE.PlaneGeometry(COURT_WORLD_WIDTH + 0.58, COURT_WORLD_LENGTH + 0.58, 24, 56);
+    const padAlphaCanvas = document.createElement('canvas');
+    padAlphaCanvas.width = 256;
+    padAlphaCanvas.height = 512;
+    const paCtx = padAlphaCanvas.getContext('2d')!;
+    paCtx.fillStyle = '#000000';
+    paCtx.fillRect(0, 0, 256, 512);
+    const edgeGrad = paCtx.createRadialGradient(128, 256, 70, 128, 256, 252);
+    edgeGrad.addColorStop(0, '#ffffff');
+    edgeGrad.addColorStop(0.72, '#ebebeb');
+    edgeGrad.addColorStop(0.92, '#555555');
+    edgeGrad.addColorStop(1, '#000000');
+    paCtx.fillStyle = edgeGrad;
+    paCtx.fillRect(0, 0, 256, 512);
+    const padAlphaTex = new THREE.CanvasTexture(padAlphaCanvas);
+    padAlphaTex.needsUpdate = true;
+
+    const padGeo = new THREE.PlaneGeometry(COURT_WORLD_WIDTH + 0.85, COURT_WORLD_LENGTH + 0.85, 24, 56);
     padGeo.rotateX(-Math.PI / 2);
     const pPos = padGeo.attributes.position as THREE.BufferAttribute;
     for (let i = 0; i < pPos.count; i++) {
       const wx = pPos.getX(i) + COURT_WORLD_CENTER_X;
       const wz = pPos.getZ(i) + COURT_WORLD_CENTER_Z;
-      pPos.setXYZ(i, wx, groundHeightAt(wx, wz) + 0.014, wz);
+      pPos.setXYZ(i, wx, groundHeightAt(wx, wz) + 0.013, wz);
     }
     padGeo.computeVertexNormals();
 
     this.courtPadMat = new THREE.MeshStandardMaterial({
       map: this.padTex,
+      alphaMap: padAlphaTex,
+      transparent: true,
+      opacity: 0.94,
       color: '#9c785c',
-      roughness: 0.9,
+      roughness: 0.92,
       metalness: 0.02,
+      depthWrite: false,
       polygonOffset: true,
       polygonOffsetFactor: -1,
       polygonOffsetUnits: -1,
@@ -204,7 +224,7 @@ export class SonkoCourt3D {
     rimGeo.computeVertexNormals();
     this.courtPadRimMesh = new THREE.Mesh(
       rimGeo,
-      new THREE.MeshStandardMaterial({ color: '#40291b', roughness: 0.96, metalness: 0.0 })
+      new THREE.MeshStandardMaterial({ color: '#40291b', roughness: 0.96, metalness: 0.0, visible: false })
     );
     this.courtPadRimMesh.name = 'CourtBorderFrame';
     this.courtPadRimMesh.receiveShadow = true;
