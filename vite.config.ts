@@ -133,9 +133,10 @@ export default defineConfig(() => {
           navigateFallbackDenylist: [
             /^\/api\//,
             /^\/ws/,
-            /^\/ads\.txt$/,
-            /^\/robots\.txt$/,
-            /^\/sitemap\.xml$/,
+            /^\/ads\.txt(\?|$)/i,
+            /^\/robots\.txt(\?|$)/i,
+            /^\/sitemap\.xml(\?|$)/i,
+            /^\/[^?]*\.[^/?]+(\?|$)/,
           ],
           runtimeCaching: [
             {
